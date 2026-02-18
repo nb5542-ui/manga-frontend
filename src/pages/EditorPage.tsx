@@ -48,7 +48,7 @@ export default function EditorPage() {
     currentPanels[currentPanelIndex] || currentPanels[0]
 
   /* ===============================
-     PANEL INTELLIGENCE (LOCAL SIMULATION)
+     LOCAL INTELLIGENCE
   =============================== */
 
   const text = currentPanel?.text || ""
@@ -59,53 +59,114 @@ export default function EditorPage() {
 
   const charCount = text.length
 
-  /* ===============================
-   ADVANCED LOCAL EMOTION DETECTION
-=============================== */
+  const lowerText = text.toLowerCase()
 
-const lowerText = text.toLowerCase()
+  const positiveWords = [
+    "love", "hope", "trust", "peace", "smile",
+    "happy", "grateful", "kind", "thank you"
+  ]
 
-const positiveWords = [
-  "love", "hope", "trust", "peace", "smile",
-  "happy", "grateful", "kind", "thank you"
-]
+  const negativeWords = [
+    "hate", "fear", "death", "pain", "anger",
+    "sad", "cry", "lonely"
+  ]
 
-const negativeWords = [
-  "hate", "fear", "death", "pain", "anger",
-  "sad", "cry", "lonely"
-]
+  const aggressionWords = [
+    "kill", "destroy", "hurt", "attack",
+    "shut up", "idiot", "stupid", "dumb",
+    "die", "fool", "loser"
+  ]
 
-const aggressionWords = [
-  "kill", "destroy", "hurt", "attack",
-  "shut up", "idiot", "stupid", "dumb",
-  "die", "fool", "loser"
-]
+  let emotionalTone = "Neutral"
 
-let emotionalTone = "Neutral"
-
-// Check aggression first (strongest)
-if (aggressionWords.some(word => lowerText.includes(word))) {
-  emotionalTone = "Aggressive"
-}
-else if (negativeWords.some(word => lowerText.includes(word))) {
-  emotionalTone = "Dark"
-}
-else if (positiveWords.some(word => lowerText.includes(word))) {
-  emotionalTone = "Positive"
-}
-
+  if (aggressionWords.some(word => lowerText.includes(word))) {
+    emotionalTone = "Aggressive"
+  } else if (negativeWords.some(word => lowerText.includes(word))) {
+    emotionalTone = "Dark"
+  } else if (positiveWords.some(word => lowerText.includes(word))) {
+    emotionalTone = "Positive"
+  }
 
   const exclamations = (text.match(/!/g) || []).length
   const questionMarks = (text.match(/\?/g) || []).length
+  const intensityScore = exclamations + questionMarks
 
   let intensity = "Low"
-  if (exclamations + questionMarks > 3) intensity = "High"
-  else if (exclamations + questionMarks > 1) intensity = "Medium"
+  if (intensityScore > 3) intensity = "High"
+  else if (intensityScore > 1) intensity = "Medium"
 
   let narrativeState = "Empty"
   if (wordCount > 0) narrativeState = "Light"
   if (wordCount > 40) narrativeState = "Dense"
   if (wordCount > 80) narrativeState = "Heavy"
+
+  /* ===============================
+     STRIP DETECTORS
+  =============================== */
+
+  const detectTone = (panelText: string) => {
+    const lower = panelText.toLowerCase()
+
+    if (aggressionWords.some(word => lower.includes(word)))
+      return "Aggressive"
+    if (negativeWords.some(word => lower.includes(word)))
+      return "Dark"
+    if (positiveWords.some(word => lower.includes(word)))
+      return "Positive"
+
+    return "Neutral"
+  }
+
+  const detectIntensity = (panelText: string) => {
+    const ex = (panelText.match(/!/g) || []).length
+    const qm = (panelText.match(/\?/g) || []).length
+    const score = ex + qm
+
+    if (score > 3) return "High"
+    if (score > 1) return "Medium"
+    return "Low"
+  }
+
+  const detectDensity = (panelText: string) => {
+    const words = panelText.trim()
+      ? panelText.trim().split(/\s+/).length
+      : 0
+
+    if (words === 0) return "Empty"
+    if (words > 80) return "Heavy"
+    if (words > 40) return "Dense"
+    return "Light"
+  }
+  /* ===============================
+   DRIFT DETECTOR
+=============================== */
+
+const detectDrift = () => {
+  if (currentPanelIndex === 0) return "Start"
+
+  const previousPanel = currentPanels[currentPanelIndex - 1]
+  if (!previousPanel) return "Stable"
+
+  const prevTone = detectTone(previousPanel.text)
+  const prevIntensity = detectIntensity(previousPanel.text)
+  const prevDensity = detectDensity(previousPanel.text)
+
+  const currentTone = detectTone(currentPanel.text)
+  const currentIntensity = detectIntensity(currentPanel.text)
+  const currentDensity = detectDensity(currentPanel.text)
+
+  let driftScore = 0
+
+  if (prevTone !== currentTone) driftScore += 2
+  if (prevIntensity !== currentIntensity) driftScore += 1
+  if (prevDensity !== currentDensity) driftScore += 1
+
+  if (driftScore === 0) return "Stable"
+  if (driftScore <= 2) return "Gradual Shift"
+  return "Sharp Shift"
+}
+const driftState = detectDrift()
+
 
   /* ===============================
      PANEL STRIP REFS
@@ -125,7 +186,6 @@ else if (positiveWords.some(word => lowerText.includes(word))) {
   useEffect(() => {
     const activeButton = panelRefs.current[currentPanelIndex]
     const strip = stripRef.current
-
     if (!activeButton || !strip) return
 
     const buttonRect = activeButton.getBoundingClientRect()
@@ -137,10 +197,7 @@ else if (positiveWords.some(word => lowerText.includes(word))) {
       stripRect.width / 2 +
       buttonRect.width / 2
 
-    strip.scrollBy({
-      left: offset,
-      behavior: "smooth",
-    })
+    strip.scrollBy({ left: offset, behavior: "smooth" })
 
     setIndicatorStyle({
       left:
@@ -160,40 +217,34 @@ else if (positiveWords.some(word => lowerText.includes(word))) {
     updated[currentChapterIndex]
       .pages[currentPageIndex]
       .panels[currentPanelIndex].text = text
-
     setChapters(updated)
   }
 
   const goNext = () => {
-    if (currentPanelIndex < currentPanels.length - 1) {
+    if (currentPanelIndex < currentPanels.length - 1)
       setCurrentPanelIndex(currentPanelIndex + 1)
-    }
   }
 
   const goPrev = () => {
-    if (currentPanelIndex > 0) {
+    if (currentPanelIndex > 0)
       setCurrentPanelIndex(currentPanelIndex - 1)
-    }
   }
 
   const createNewPanel = () => {
     const updated = [...chapters]
-
     updated[currentChapterIndex]
       .pages[currentPageIndex]
       .panels.push({
         id: `panel-${currentPanels.length + 1}`,
         text: "",
       })
-
     setChapters(updated)
     setCurrentPanelIndex(currentPanels.length)
   }
 
   const addPage = () => {
-    setChapters((prevChapters) => {
-      const updated = [...prevChapters]
-
+    setChapters(prev => {
+      const updated = [...prev]
       const newPageIndex =
         updated[currentChapterIndex].pages.length
 
@@ -224,50 +275,12 @@ else if (positiveWords.some(word => lowerText.includes(word))) {
       },
     ])
   }
-  
 
   const renameChapter = (index: number, title: string) => {
     const updated = [...chapters]
     updated[index].title = title
     setChapters(updated)
   }
-  /* ===============================
-   TONE DETECTOR FOR STRIP
-=============================== */
-
-const detectTone = (panelText: string) => {
-  const lower = panelText.toLowerCase()
-
-  const positiveWords = [
-    "love", "hope", "trust", "peace", "smile",
-    "happy", "grateful", "kind", "thank you"
-  ]
-
-  const negativeWords = [
-    "hate", "fear", "death", "pain", "anger",
-    "sad", "cry", "lonely"
-  ]
-
-  const aggressionWords = [
-    "kill", "destroy", "hurt", "attack",
-    "shut up", "idiot", "stupid", "dumb",
-    "die", "fool", "loser"
-  ]
-
-  if (aggressionWords.some(word => lower.includes(word))) {
-    return "Aggressive"
-  }
-  if (negativeWords.some(word => lower.includes(word))) {
-    return "Dark"
-  }
-  if (positiveWords.some(word => lower.includes(word))) {
-    return "Positive"
-  }
-
-  return "Neutral"
-}
-
-  
 
   /* ===============================
      UI
@@ -361,12 +374,17 @@ const detectTone = (panelText: string) => {
               className="absolute bottom-0 h-[2px] bg-white transition-all duration-300"
               style={indicatorStyle}
             />
+
             <div
               ref={stripRef}
               className="relative flex items-center gap-6 overflow-x-auto py-4 scroll-smooth"
             >
-              {currentPanels.map((_, index) => {
+              {currentPanels.map((panel, index) => {
                 const isActive = index === currentPanelIndex
+                const tone = detectTone(panel.text)
+                const intensityLevel = detectIntensity(panel.text)
+                const density = detectDensity(panel.text)
+
                 return (
                   <button
                     key={index}
@@ -374,31 +392,53 @@ const detectTone = (panelText: string) => {
                     onClick={() => setCurrentPanelIndex(index)}
                     className="flex flex-col items-center group"
                   >
-                    <div
-  className={`w-4 h-4 rounded-full transition-all duration-200 ${
-    isActive ? "scale-110" : ""
-  } ${
-    (() => {
-      const tone = detectTone(currentPanels[index].text)
+                    <div className="flex flex-col items-center gap-2">
 
-      if (tone === "Positive") return "bg-green-500"
-      if (tone === "Dark") return "bg-red-500"
-      if (tone === "Aggressive") return "bg-orange-500"
+                      {/* DOT */}
+                      <div
+                        className={`w-4 h-4 rounded-full transition-all duration-200 ${
+                          isActive ? "scale-110" : ""
+                        } ${
+                          tone === "Positive"
+                            ? "bg-green-500"
+                            : tone === "Dark"
+                            ? "bg-red-500"
+                            : tone === "Aggressive"
+                            ? "bg-orange-500"
+                            : "bg-zinc-600"
+                        } ${
+                          intensityLevel === "High"
+                            ? "ring-2 ring-white"
+                            : intensityLevel === "Medium"
+                            ? "ring-1 ring-white/70"
+                            : ""
+                        } group-hover:brightness-125`}
+                      />
 
-      return "bg-zinc-600"
-    })()
-  } group-hover:brightness-125`}
-/>
+                      {/* DENSITY BAR */}
+                      <div
+                        className={`w-1 rounded-full transition-all duration-200 ${
+                          density === "Heavy"
+                            ? "h-6 bg-white"
+                            : density === "Dense"
+                            ? "h-4 bg-white/80"
+                            : density === "Light"
+                            ? "h-2 bg-white/60"
+                            : "h-0"
+                        }`}
+                      />
 
-                    <span
-                      className={`mt-2 text-xs transition-colors ${
-                        isActive
-                          ? "text-white"
-                          : "text-zinc-500 group-hover:text-zinc-300"
-                      }`}
-                    >
-                      {index + 1}
-                    </span>
+                      <span
+                        className={`text-xs transition-colors ${
+                          isActive
+                            ? "text-white"
+                            : "text-zinc-500 group-hover:text-zinc-300"
+                        }`}
+                      >
+                        {index + 1}
+                      </span>
+
+                    </div>
                   </button>
                 )
               })}
@@ -434,43 +474,19 @@ const detectTone = (panelText: string) => {
         </div>
       </div>
 
-      {/* INTELLIGENCE PANEL */}
+      {/* INTELLIGENCE PANEL (unchanged) */}
       <div className="w-80 border-l border-zinc-800 bg-zinc-950 p-6 text-sm">
-
         <div className="uppercase text-xs mb-6 text-zinc-600">
           Intelligence
         </div>
 
-        {currentPanel ? (
+        {currentPanel && (
           <div className="space-y-8 text-zinc-300">
-
-            <div>
-              <div className="text-xs uppercase text-zinc-600 mb-2">
-                Panel Identity
-              </div>
-              <div className="space-y-1">
-                <div>ID: {currentPanel.id}</div>
-                <div>Chapter: {currentChapter?.title}</div>
-                <div>Page: {currentPageIndex + 1}</div>
-              </div>
-            </div>
-
             <div>
               <div className="text-xs uppercase text-zinc-600 mb-2">
                 Emotional Tone
               </div>
-              <div className="flex items-center gap-3">
-                <div className={`w-3 h-3 rounded-full ${
-                  emotionalTone === "Positive"
-                    ? "bg-green-500"
-                    : emotionalTone === "Dark"
-                    ? "bg-red-500"
-                    : emotionalTone === "Aggressive"
-                    ? "bg-orange-500"
-                    : "bg-zinc-500"
-                }`} />
-                <span>{emotionalTone}</span>
-              </div>
+              <div>{emotionalTone}</div>
             </div>
 
             <div>
@@ -481,31 +497,59 @@ const detectTone = (panelText: string) => {
             </div>
 
             <div>
-              <div className="text-xs uppercase text-zinc-600 mb-2">
-                Narrative Density
-              </div>
-              <div>{narrativeState}</div>
-            </div>
+  <div className="text-xs uppercase text-zinc-600 mb-2">
+    Panel State
+  </div>
+
+  <div
+    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+      narrativeState === "Empty"
+        ? "bg-zinc-800 text-zinc-400"
+        : narrativeState === "Light"
+        ? "bg-blue-900/40 text-blue-400"
+        : narrativeState === "Dense"
+        ? "bg-purple-900/40 text-purple-400"
+        : "bg-red-900/40 text-red-400"
+    }`}
+  >
+    {narrativeState}
+  </div>
+</div>
+{/* DRIFT ANALYSIS */}
+<div>
+  <div className="text-xs uppercase text-zinc-600 mb-2">
+    Narrative Drift
+  </div>
+
+  <div
+    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+      driftState === "Start"
+        ? "bg-zinc-800 text-zinc-400"
+        : driftState === "Stable"
+        ? "bg-green-900/40 text-green-400"
+        : driftState === "Gradual Shift"
+        ? "bg-yellow-900/40 text-yellow-400"
+        : "bg-red-900/40 text-red-400"
+    }`}
+  >
+    {driftState}
+  </div>
+</div>
+
+
 
             <div>
               <div className="text-xs uppercase text-zinc-600 mb-2">
                 Text Metrics
               </div>
-              <div className="space-y-1">
-                <div>Words: {wordCount}</div>
-                <div>Characters: {charCount}</div>
-              </div>
+              <div>Words: {wordCount}</div>
+              <div>Characters: {charCount}</div>
             </div>
-
-          </div>
-        ) : (
-          <div className="text-zinc-500">
-            Select a panel to analyze.
           </div>
         )}
-
       </div>
 
     </div>
   )
 }
+
