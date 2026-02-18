@@ -18,6 +18,7 @@ interface Chapter {
 }
 
 export default function EditorPage() {
+
   /* ===============================
      STATE
   =============================== */
@@ -40,9 +41,71 @@ export default function EditorPage() {
   const [currentPanelIndex, setCurrentPanelIndex] = useState(0)
 
   const currentChapter = chapters[currentChapterIndex]
-  const currentPage = currentChapter.pages[currentPageIndex]
-  const currentPanels = currentPage.panels
-  const currentPanel = currentPanels[currentPanelIndex]
+  const currentPage = currentChapter?.pages[currentPageIndex]
+  const currentPanels = currentPage?.panels ?? []
+
+  const currentPanel =
+    currentPanels[currentPanelIndex] || currentPanels[0]
+
+  /* ===============================
+     PANEL INTELLIGENCE (LOCAL SIMULATION)
+  =============================== */
+
+  const text = currentPanel?.text || ""
+
+  const wordCount = text.trim()
+    ? text.trim().split(/\s+/).length
+    : 0
+
+  const charCount = text.length
+
+  /* ===============================
+   ADVANCED LOCAL EMOTION DETECTION
+=============================== */
+
+const lowerText = text.toLowerCase()
+
+const positiveWords = [
+  "love", "hope", "trust", "peace", "smile",
+  "happy", "grateful", "kind", "thank you"
+]
+
+const negativeWords = [
+  "hate", "fear", "death", "pain", "anger",
+  "sad", "cry", "lonely"
+]
+
+const aggressionWords = [
+  "kill", "destroy", "hurt", "attack",
+  "shut up", "idiot", "stupid", "dumb",
+  "die", "fool", "loser"
+]
+
+let emotionalTone = "Neutral"
+
+// Check aggression first (strongest)
+if (aggressionWords.some(word => lowerText.includes(word))) {
+  emotionalTone = "Aggressive"
+}
+else if (negativeWords.some(word => lowerText.includes(word))) {
+  emotionalTone = "Dark"
+}
+else if (positiveWords.some(word => lowerText.includes(word))) {
+  emotionalTone = "Positive"
+}
+
+
+  const exclamations = (text.match(/!/g) || []).length
+  const questionMarks = (text.match(/\?/g) || []).length
+
+  let intensity = "Low"
+  if (exclamations + questionMarks > 3) intensity = "High"
+  else if (exclamations + questionMarks > 1) intensity = "Medium"
+
+  let narrativeState = "Empty"
+  if (wordCount > 0) narrativeState = "Light"
+  if (wordCount > 40) narrativeState = "Dense"
+  if (wordCount > 80) narrativeState = "Heavy"
 
   /* ===============================
      PANEL STRIP REFS
@@ -50,7 +113,43 @@ export default function EditorPage() {
 
   const stripRef = useRef<HTMLDivElement>(null)
   const panelRefs = useRef<(HTMLButtonElement | null)[]>([])
-  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 })
+  const [indicatorStyle, setIndicatorStyle] = useState({
+    left: 0,
+    width: 0,
+  })
+
+  useEffect(() => {
+    panelRefs.current = []
+  }, [currentChapterIndex, currentPageIndex])
+
+  useEffect(() => {
+    const activeButton = panelRefs.current[currentPanelIndex]
+    const strip = stripRef.current
+
+    if (!activeButton || !strip) return
+
+    const buttonRect = activeButton.getBoundingClientRect()
+    const stripRect = strip.getBoundingClientRect()
+
+    const offset =
+      buttonRect.left -
+      stripRect.left -
+      stripRect.width / 2 +
+      buttonRect.width / 2
+
+    strip.scrollBy({
+      left: offset,
+      behavior: "smooth",
+    })
+
+    setIndicatorStyle({
+      left:
+        activeButton.offsetLeft +
+        activeButton.offsetWidth / 2 -
+        12,
+      width: 24,
+    })
+  }, [currentPanelIndex, currentPageIndex])
 
   /* ===============================
      PANEL ACTIONS
@@ -91,34 +190,24 @@ export default function EditorPage() {
     setCurrentPanelIndex(currentPanels.length)
   }
 
-  /* ===============================
-     PAGE ACTIONS
-  =============================== */
-
   const addPage = () => {
-  setChapters((prevChapters) => {
-    const updated = [...prevChapters]
+    setChapters((prevChapters) => {
+      const updated = [...prevChapters]
 
-    const newPageIndex =
-      updated[currentChapterIndex].pages.length
+      const newPageIndex =
+        updated[currentChapterIndex].pages.length
 
-    updated[currentChapterIndex].pages.push({
-      id: `page-${newPageIndex + 1}`,
-      panels: [{ id: "panel-1", text: "" }],
+      updated[currentChapterIndex].pages.push({
+        id: `page-${newPageIndex + 1}`,
+        panels: [{ id: "panel-1", text: "" }],
+      })
+
+      setCurrentPageIndex(newPageIndex)
+      setCurrentPanelIndex(0)
+
+      return updated
     })
-
-    // After safely mutating
-    setCurrentPageIndex(newPageIndex)
-    setCurrentPanelIndex(0)
-
-    return updated
-  })
-}
-
-
-  /* ===============================
-     CHAPTER ACTIONS
-  =============================== */
+  }
 
   const addChapter = () => {
     setChapters([
@@ -135,33 +224,50 @@ export default function EditorPage() {
       },
     ])
   }
+  
 
   const renameChapter = (index: number, title: string) => {
     const updated = [...chapters]
     updated[index].title = title
     setChapters(updated)
   }
-
   /* ===============================
-     STRIP INDICATOR
-  =============================== */
+   TONE DETECTOR FOR STRIP
+=============================== */
 
-  useEffect(() => {
-    const activeButton = panelRefs.current[currentPanelIndex]
-    const strip = stripRef.current
+const detectTone = (panelText: string) => {
+  const lower = panelText.toLowerCase()
 
-    if (activeButton && strip) {
-      const left =
-        activeButton.offsetLeft +
-        activeButton.offsetWidth / 2 -
-        12
+  const positiveWords = [
+    "love", "hope", "trust", "peace", "smile",
+    "happy", "grateful", "kind", "thank you"
+  ]
 
-      setIndicatorStyle({
-        left,
-        width: 24,
-      })
-    }
-  }, [currentPanelIndex, currentPageIndex])
+  const negativeWords = [
+    "hate", "fear", "death", "pain", "anger",
+    "sad", "cry", "lonely"
+  ]
+
+  const aggressionWords = [
+    "kill", "destroy", "hurt", "attack",
+    "shut up", "idiot", "stupid", "dumb",
+    "die", "fool", "loser"
+  ]
+
+  if (aggressionWords.some(word => lower.includes(word))) {
+    return "Aggressive"
+  }
+  if (negativeWords.some(word => lower.includes(word))) {
+    return "Dark"
+  }
+  if (positiveWords.some(word => lower.includes(word))) {
+    return "Positive"
+  }
+
+  return "Neutral"
+}
+
+  
 
   /* ===============================
      UI
@@ -172,14 +278,12 @@ export default function EditorPage() {
 
       {/* SIDEBAR */}
       <div className="w-72 border-r border-zinc-800 bg-zinc-950 p-5 overflow-y-auto">
-
         <div className="text-xs text-zinc-500 uppercase mb-4">
           Chapters
         </div>
 
         {chapters.map((chapter, cIndex) => (
           <div key={chapter.id} className="mb-4">
-
             <input
               value={chapter.title}
               onChange={(e) => renameChapter(cIndex, e.target.value)}
@@ -197,7 +301,6 @@ export default function EditorPage() {
 
             {cIndex === currentChapterIndex && (
               <div className="ml-4 mt-3">
-
                 <div className="text-xs text-zinc-500 uppercase mb-2">
                   Pages
                 </div>
@@ -238,79 +341,171 @@ export default function EditorPage() {
         </button>
       </div>
 
-      {/* MAIN WORKSPACE */}
-      <div className="flex-1 flex flex-col px-10 py-10 overflow-auto">
+      {/* CENTER COLUMN */}
+      <div className="flex-1 flex flex-col">
 
-        {/* PANEL STRIP */}
-        <div className="relative mb-10">
-
-          <div className="absolute top-1/2 left-0 w-full h-px bg-zinc-800 -translate-y-1/2" />
-
-          <div
-            className="absolute bottom-0 h-[2px] bg-white transition-all duration-300"
-            style={indicatorStyle}
-          />
-
-          <div
-            ref={stripRef}
-            className="relative flex items-center gap-6 overflow-x-auto py-4"
-          >
-            {currentPanels.map((_, index) => {
-              const isActive = index === currentPanelIndex
-
-              return (
-                <button
-                  key={index}
-                  ref={(el) => (panelRefs.current[index] = el)}
-                  onClick={() => setCurrentPanelIndex(index)}
-                  className="flex flex-col items-center group"
-                >
-                  <div
-                    className={`w-4 h-4 rounded-full ${
-                      isActive
-                        ? "bg-white scale-110"
-                        : "bg-zinc-600 group-hover:bg-zinc-400"
-                    }`}
-                  />
-                  <span
-                    className={`mt-2 text-xs ${
-                      isActive
-                        ? "text-white"
-                        : "text-zinc-500 group-hover:text-zinc-300"
-                    }`}
-                  >
-                    {index + 1}
-                  </span>
-                </button>
-              )
-            })}
-
-            <button
-              onClick={createNewPanel}
-              className="ml-6 text-zinc-500 hover:text-white text-sm"
-            >
-              + Add Panel
-            </button>
+        <div className="h-12 border-b border-zinc-800 flex items-center px-6 text-sm text-zinc-400">
+          <div className="flex gap-6">
+            <span>{currentChapter?.title}</span>
+            <span>Page {currentPageIndex + 1}</span>
+            <span>{currentPanels.length} Panels</span>
           </div>
         </div>
 
-        {/* PANEL EDITOR */}
-        <div className="flex justify-center">
-          <div className="w-full max-w-4xl">
-            <PanelEditor
-              key={`${currentChapterIndex}-${currentPageIndex}-${currentPanelIndex}`}
-              panelNumber={currentPanelIndex + 1}
-              panelText={currentPanel.text}
-              onChange={updatePanelText}
-              onNext={goNext}
-              onPrev={goPrev}
-              onCreate={createNewPanel}
-              hasNext={currentPanelIndex < currentPanels.length - 1}
-              hasPrev={currentPanelIndex > 0}
+        <div className="flex-1 px-10 py-10 overflow-auto">
+
+          {/* PANEL STRIP */}
+          <div className="relative mb-10">
+            <div className="absolute top-1/2 left-0 w-full h-px bg-zinc-800 -translate-y-1/2" />
+            <div
+              className="absolute bottom-0 h-[2px] bg-white transition-all duration-300"
+              style={indicatorStyle}
             />
+            <div
+              ref={stripRef}
+              className="relative flex items-center gap-6 overflow-x-auto py-4 scroll-smooth"
+            >
+              {currentPanels.map((_, index) => {
+                const isActive = index === currentPanelIndex
+                return (
+                  <button
+                    key={index}
+                    ref={(el) => (panelRefs.current[index] = el)}
+                    onClick={() => setCurrentPanelIndex(index)}
+                    className="flex flex-col items-center group"
+                  >
+                    <div
+  className={`w-4 h-4 rounded-full transition-all duration-200 ${
+    isActive ? "scale-110" : ""
+  } ${
+    (() => {
+      const tone = detectTone(currentPanels[index].text)
+
+      if (tone === "Positive") return "bg-green-500"
+      if (tone === "Dark") return "bg-red-500"
+      if (tone === "Aggressive") return "bg-orange-500"
+
+      return "bg-zinc-600"
+    })()
+  } group-hover:brightness-125`}
+/>
+
+                    <span
+                      className={`mt-2 text-xs transition-colors ${
+                        isActive
+                          ? "text-white"
+                          : "text-zinc-500 group-hover:text-zinc-300"
+                      }`}
+                    >
+                      {index + 1}
+                    </span>
+                  </button>
+                )
+              })}
+
+              <button
+                onClick={createNewPanel}
+                className="ml-6 text-zinc-500 hover:text-white text-sm"
+              >
+                + Add Panel
+              </button>
+            </div>
           </div>
+
+          {/* PANEL EDITOR */}
+          <div className="flex justify-center">
+            <div className="w-full max-w-4xl">
+              {currentPanel && (
+                <PanelEditor
+                  key={`${currentChapterIndex}-${currentPageIndex}-${currentPanelIndex}`}
+                  panelNumber={currentPanelIndex + 1}
+                  panelText={currentPanel.text}
+                  onChange={updatePanelText}
+                  onNext={goNext}
+                  onPrev={goPrev}
+                  onCreate={createNewPanel}
+                  hasNext={currentPanelIndex < currentPanels.length - 1}
+                  hasPrev={currentPanelIndex > 0}
+                />
+              )}
+            </div>
+          </div>
+
         </div>
       </div>
+
+      {/* INTELLIGENCE PANEL */}
+      <div className="w-80 border-l border-zinc-800 bg-zinc-950 p-6 text-sm">
+
+        <div className="uppercase text-xs mb-6 text-zinc-600">
+          Intelligence
+        </div>
+
+        {currentPanel ? (
+          <div className="space-y-8 text-zinc-300">
+
+            <div>
+              <div className="text-xs uppercase text-zinc-600 mb-2">
+                Panel Identity
+              </div>
+              <div className="space-y-1">
+                <div>ID: {currentPanel.id}</div>
+                <div>Chapter: {currentChapter?.title}</div>
+                <div>Page: {currentPageIndex + 1}</div>
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs uppercase text-zinc-600 mb-2">
+                Emotional Tone
+              </div>
+              <div className="flex items-center gap-3">
+                <div className={`w-3 h-3 rounded-full ${
+                  emotionalTone === "Positive"
+                    ? "bg-green-500"
+                    : emotionalTone === "Dark"
+                    ? "bg-red-500"
+                    : emotionalTone === "Aggressive"
+                    ? "bg-orange-500"
+                    : "bg-zinc-500"
+                }`} />
+                <span>{emotionalTone}</span>
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs uppercase text-zinc-600 mb-2">
+                Intensity
+              </div>
+              <div>{intensity}</div>
+            </div>
+
+            <div>
+              <div className="text-xs uppercase text-zinc-600 mb-2">
+                Narrative Density
+              </div>
+              <div>{narrativeState}</div>
+            </div>
+
+            <div>
+              <div className="text-xs uppercase text-zinc-600 mb-2">
+                Text Metrics
+              </div>
+              <div className="space-y-1">
+                <div>Words: {wordCount}</div>
+                <div>Characters: {charCount}</div>
+              </div>
+            </div>
+
+          </div>
+        ) : (
+          <div className="text-zinc-500">
+            Select a panel to analyze.
+          </div>
+        )}
+
+      </div>
+
     </div>
   )
 }
