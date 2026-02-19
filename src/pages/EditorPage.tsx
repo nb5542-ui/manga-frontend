@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useReducer } from "react"
+
 import PanelEditor from "../components/panel/PanelEditor"
 
 interface Panel {
@@ -17,13 +18,96 @@ interface Chapter {
   pages: Page[]
 }
 
+interface HistoryEntry<T> {
+  state: T
+  actionType: string
+  timestamp: number
+}
+
+interface HistoryState<T> {
+  past: HistoryEntry<T>[]
+  present: T
+  future: HistoryEntry<T>[]
+}
+
+type HistoryAction<T> =
+  | { type: "SET_STATE"; payload: T; actionType: string }
+  | { type: "UNDO" }
+  | { type: "REDO" }
+
+function historyReducer<T>(
+  state: HistoryState<T>,
+  action: HistoryAction<T>
+): HistoryState<T> {
+
+  switch (action.type) {
+
+    case "SET_STATE": {
+      return {
+        past: [
+          ...state.past,
+          {
+            state: state.present,
+            actionType: action.actionType,
+            timestamp: Date.now()
+          }
+        ],
+        present: action.payload,
+        future: []
+      }
+    }
+
+    case "UNDO": {
+      if (state.past.length === 0) return state
+
+      const previous = state.past[state.past.length - 1]
+
+      return {
+        past: state.past.slice(0, -1),
+        present: previous.state,
+        future: [
+          {
+            state: state.present,
+            actionType: previous.actionType,
+            timestamp: Date.now()
+          },
+          ...state.future
+        ]
+      }
+    }
+
+    case "REDO": {
+      if (state.future.length === 0) return state
+
+      const next = state.future[0]
+
+      return {
+        past: [
+          ...state.past,
+          {
+            state: state.present,
+            actionType: "next.actionType",
+            timestamp: Date.now()
+          }
+
+        ],
+        present: next.state,
+        future: state.future.slice(1)
+      }
+    }
+
+    default:
+      return state
+  }
+}
+
 export default function EditorPage() {
 
   /* ===============================
-     STATE
+     STATE (NOW USING REDUCER)
   =============================== */
 
-  const [chapters, setChapters] = useState<Chapter[]>([
+  const initialChapters: Chapter[] = [
     {
       id: "chapter-1",
       title: "Chapter 1",
@@ -34,7 +118,18 @@ export default function EditorPage() {
         },
       ],
     },
-  ])
+  ]
+
+  const [history, dispatch] = useReducer(
+    historyReducer<Chapter[]>,
+    {
+      past: [],
+      present: initialChapters,
+      future: []
+    }
+  )
+
+  const chapters = history.present
 
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0)
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
@@ -182,6 +277,30 @@ const driftState = detectDrift()
   useEffect(() => {
     panelRefs.current = []
   }, [currentChapterIndex, currentPageIndex])
+  useEffect(() => {
+  const handleKeyDown = (e: KeyboardEvent) => {
+    const isMac = navigator.platform.toUpperCase().includes("MAC")
+    const ctrlKey = isMac ? e.metaKey : e.ctrlKey
+
+    if (!ctrlKey) return
+
+    // Undo
+    if (e.key === "z" && !e.shiftKey) {
+      e.preventDefault()
+      dispatch({ type: "UNDO" })
+    }
+
+    // Redo
+    if ((e.key === "z" && e.shiftKey) || e.key === "y") {
+      e.preventDefault()
+      dispatch({ type: "REDO" })
+    }
+  }
+
+  window.addEventListener("keydown", handleKeyDown)
+  return () => window.removeEventListener("keydown", handleKeyDown)
+}, [dispatch])
+
 
   useEffect(() => {
     const activeButton = panelRefs.current[currentPanelIndex]
@@ -213,12 +332,36 @@ const driftState = detectDrift()
   =============================== */
 
   const updatePanelText = (text: string) => {
-    const updated = [...chapters]
-    updated[currentChapterIndex]
-      .pages[currentPageIndex]
-      .panels[currentPanelIndex].text = text
-    setChapters(updated)
-  }
+  const updated = chapters.map((chapter, cIndex) => {
+    if (cIndex !== currentChapterIndex) return chapter
+
+    return {
+      ...chapter,
+      pages: chapter.pages.map((page, pIndex) => {
+        if (pIndex !== currentPageIndex) return page
+
+        return {
+          ...page,
+          panels: page.panels.map((panel, panelIndex) => {
+            if (panelIndex !== currentPanelIndex) return panel
+
+            return {
+              ...panel,
+              text
+            }
+          })
+        }
+      })
+    }
+  })
+
+  dispatch({
+    type: "SET_STATE",
+    payload: updated,
+    actionType: "UPDATE_PANEL_TEXT"
+  })
+}
+
 
   const goNext = () => {
     if (currentPanelIndex < currentPanels.length - 1)
@@ -231,56 +374,102 @@ const driftState = detectDrift()
   }
 
   const createNewPanel = () => {
-    const updated = [...chapters]
-    updated[currentChapterIndex]
-      .pages[currentPageIndex]
-      .panels.push({
-        id: `panel-${currentPanels.length + 1}`,
-        text: "",
+  const updated = chapters.map((chapter, cIndex) => {
+    if (cIndex !== currentChapterIndex) return chapter
+
+    return {
+      ...chapter,
+      pages: chapter.pages.map((page, pIndex) => {
+        if (pIndex !== currentPageIndex) return page
+
+        return {
+          ...page,
+          panels: [
+            ...page.panels,
+            {
+              id: `panel-${page.panels.length + 1}`,
+              text: ""
+            }
+          ]
+        }
       })
-    setChapters(updated)
-    setCurrentPanelIndex(currentPanels.length)
-  }
+    }
+  })
+
+  dispatch({
+    type: "SET_STATE",
+    payload: updated,
+    actionType: "CREATE_PANEL"
+  })
+
+  setCurrentPanelIndex(currentPanels.length)
+}
+
 
   const addPage = () => {
-    setChapters(prev => {
-      const updated = [...prev]
-      const newPageIndex =
-        updated[currentChapterIndex].pages.length
+  const updated = chapters.map((chapter, cIndex) => {
+    if (cIndex !== currentChapterIndex) return chapter
 
-      updated[currentChapterIndex].pages.push({
-        id: `page-${newPageIndex + 1}`,
-        panels: [{ id: "panel-1", text: "" }],
-      })
+    return {
+      ...chapter,
+      pages: [
+        ...chapter.pages,
+        {
+          id: `page-${chapter.pages.length + 1}`,
+          panels: [{ id: "panel-1", text: "" }]
+        }
+      ]
+    }
+  })
 
-      setCurrentPageIndex(newPageIndex)
-      setCurrentPanelIndex(0)
+  const newPageIndex = currentChapter.pages.length
 
-      return updated
-    })
-  }
+  dispatch({
+    type: "SET_STATE",
+    payload: updated,
+    actionType: "CREATE_PAGE"
+  })
+
+  setCurrentPageIndex(newPageIndex)
+  setCurrentPanelIndex(0)
+}
+
 
   const addChapter = () => {
-    setChapters([
-      ...chapters,
-      {
-        id: `chapter-${chapters.length + 1}`,
-        title: `Chapter ${chapters.length + 1}`,
-        pages: [
-          {
-            id: "page-1",
-            panels: [{ id: "panel-1", text: "" }],
-          },
-        ],
-      },
-    ])
-  }
+  const updated = [
+    ...chapters,
+    {
+      id: `chapter-${chapters.length + 1}`,
+      title: `Chapter ${chapters.length + 1}`,
+      pages: [
+        {
+          id: "page-1",
+          panels: [{ id: "panel-1", text: "" }],
+        },
+      ],
+    },
+  ]
+
+  dispatch({
+    type: "SET_STATE",
+    payload: updated,
+    actionType: "CREATE_CHAPTER"
+  })
+}
+
 
   const renameChapter = (index: number, title: string) => {
-    const updated = [...chapters]
-    updated[index].title = title
-    setChapters(updated)
-  }
+  const updated = chapters.map((chapter, i) =>
+    i === index ? { ...chapter, title } : chapter
+  )
+
+  dispatch({
+    type: "SET_STATE",
+    payload: updated,
+    actionType: "RENAME_CHAPTER"
+  })
+}
+
 
   /* ===============================
      UI
@@ -466,6 +655,8 @@ const driftState = detectDrift()
                   onCreate={createNewPanel}
                   hasNext={currentPanelIndex < currentPanels.length - 1}
                   hasPrev={currentPanelIndex > 0}
+                  onUndo={() => dispatch({ type: "UNDO" })}
+                  onRedo={() => dispatch({ type: "REDO" })}
                 />
               )}
             </div>

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 
 interface Props {
   panelNumber: number
@@ -9,6 +9,9 @@ interface Props {
   onCreate: () => void
   hasNext: boolean
   hasPrev: boolean
+  onUndo?: () => void
+  onRedo?: () => void
+
 }
 
 export default function PanelEditor({
@@ -20,8 +23,26 @@ export default function PanelEditor({
   onCreate,
   hasNext,
   hasPrev,
+  onUndo,
+  onRedo,
 }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [localText, setLocalText] = useState(panelText)
+
+  useEffect(() => {
+  setLocalText(panelText)
+}, [panelNumber, panelText])
+useEffect(() => {
+  const timeout = setTimeout(() => {
+    if (localText !== panelText) {
+      onChange(localText)
+    }
+  }, 500)
+
+  return () => clearTimeout(timeout)
+}, [localText])
+
+
 
   // Auto-focus when panel changes
   useEffect(() => {
@@ -29,18 +50,36 @@ export default function PanelEditor({
   }, [panelNumber])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.ctrlKey && e.key === "Enter") {
-      e.preventDefault()
+  const isMac = navigator.platform.toUpperCase().includes("MAC")
+  const ctrlKey = isMac ? e.metaKey : e.ctrlKey
 
-      if (e.shiftKey) {
-        onCreate()
-      } else if (hasNext) {
-        onNext()
-      } else {
-        onCreate() // auto create if last panel
-      }
+  if (ctrlKey && e.key === "z") {
+    e.preventDefault()
+
+    if (e.shiftKey) {
+      onRedo?.()
+    } else {
+      onUndo?.()
+    }
+
+    return
+  }
+
+  // existing logic
+  if (e.ctrlKey && e.key === "Enter") {
+    e.preventDefault()
+
+    if (e.shiftKey) {
+      onCreate()
+    } else if (hasNext) {
+      onNext()
+    } else {
+      onCreate()
     }
   }
+}
+
+
 
   return (
     <div
@@ -88,8 +127,9 @@ export default function PanelEditor({
       {/* Writing Area */}
       <textarea
         ref={textareaRef}
-        value={panelText}
-        onChange={(e) => onChange(e.target.value)}
+        value={localText}
+        onChange={(e) => setLocalText(e.target.value)}
+
         onKeyDown={handleKeyDown}
         className="
           flex-1 w-full resize-none bg-transparent
