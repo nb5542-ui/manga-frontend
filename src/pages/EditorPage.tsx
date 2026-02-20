@@ -43,6 +43,7 @@ function historyReducer<T>(
   switch (action.type) {
 
     case "SET_STATE": {
+      console.log("SET_STATE called")
       return {
         past: [
           ...state.past,
@@ -58,43 +59,44 @@ function historyReducer<T>(
     }
 
     case "UNDO": {
-      if (state.past.length === 0) return state
+      console.log("UNDO", state)
+  if (state.past.length === 0) return state
 
-      const previous = state.past[state.past.length - 1]
+  const previousEntry = state.past[state.past.length - 1]
 
-      return {
-        past: state.past.slice(0, -1),
-        present: previous.state,
-        future: [
-          {
-            state: state.present,
-            actionType: previous.actionType,
-            timestamp: Date.now()
-          },
-          ...state.future
-        ]
-      }
-    }
+  return {
+    past: state.past.slice(0, -1),
+    present: previousEntry.state,
+    future: [
+      {
+        state: state.present,
+        actionType: previousEntry.actionType,
+        timestamp: previousEntry.timestamp
+      },
+      ...state.future
+    ]
+  }
+}
 
     case "REDO": {
-      if (state.future.length === 0) return state
+      console.log("REDO", state.future.length)
+  if (state.future.length === 0) return state
 
-      const next = state.future[0]
+  const nextEntry = state.future[0]
 
-      return {
-        past: [
-          ...state.past,
-          {
-            state: state.present,
-            actionType: "next.actionType",
-            timestamp: Date.now()
-          }
-
-        ],
-        present: next.state,
-        future: state.future.slice(1)
+  return {
+    past: [
+      ...state.past,
+      {
+        state: state.present,
+        actionType: nextEntry.actionType,
+        timestamp: nextEntry.timestamp
       }
-    }
+    ],
+    present: nextEntry.state,
+    future: state.future.slice(1)
+  }
+}
 
     default:
       return state
@@ -128,6 +130,17 @@ export default function EditorPage() {
       future: []
     }
   )
+  const isRestoringRef = useRef(false)
+
+const handleUndo = () => {
+  isRestoringRef.current = true
+  dispatch({ type: "UNDO" })
+}
+
+const handleRedo = () => {
+  isRestoringRef.current = true
+  dispatch({ type: "REDO" })
+}
 
   const chapters = history.present
 
@@ -284,22 +297,27 @@ const driftState = detectDrift()
 
     if (!ctrlKey) return
 
-    // Undo
-    if (e.key === "z" && !e.shiftKey) {
+    const key = e.key.toLowerCase()
+
+    if (key === "z" && !e.shiftKey) {
       e.preventDefault()
-      dispatch({ type: "UNDO" })
+      handleUndo()
     }
 
-    // Redo
-    if ((e.key === "z" && e.shiftKey) || e.key === "y") {
+    if (key === "z" && e.shiftKey) {
       e.preventDefault()
-      dispatch({ type: "REDO" })
+      handleRedo()
+    }
+
+    if (key === "y") {
+      e.preventDefault()
+      handleRedo()
     }
   }
 
   window.addEventListener("keydown", handleKeyDown)
   return () => window.removeEventListener("keydown", handleKeyDown)
-}, [dispatch])
+}, [])
 
 
   useEffect(() => {
@@ -355,11 +373,16 @@ const driftState = detectDrift()
     }
   })
 
-  dispatch({
-    type: "SET_STATE",
-    payload: updated,
-    actionType: "UPDATE_PANEL_TEXT"
-  })
+  if (isRestoringRef.current) {
+  isRestoringRef.current = false
+  return
+}
+
+dispatch({
+  type: "SET_STATE",
+  payload: updated,
+  actionType: "UPDATE_PANEL_TEXT"
+})
 }
 
 
@@ -655,8 +678,8 @@ const driftState = detectDrift()
                   onCreate={createNewPanel}
                   hasNext={currentPanelIndex < currentPanels.length - 1}
                   hasPrev={currentPanelIndex > 0}
-                  onUndo={() => dispatch({ type: "UNDO" })}
-                  onRedo={() => dispatch({ type: "REDO" })}
+                  onUndo={handleUndo}
+                  onRedo={handleRedo}
                 />
               )}
             </div>
