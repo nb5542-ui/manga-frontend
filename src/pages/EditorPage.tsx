@@ -29,6 +29,7 @@ interface HistoryState<T> {
   present: T
   future: HistoryEntry<T>[]
 }
+const MAX_HISTORY = 100
 
 type HistoryAction<T> =
   | { type: "SET_STATE"; payload: T; actionType: string }
@@ -43,20 +44,23 @@ function historyReducer<T>(
   switch (action.type) {
 
     case "SET_STATE": {
-      console.log("SET_STATE called")
-      return {
-        past: [
-          ...state.past,
-          {
-            state: state.present,
-            actionType: action.actionType,
-            timestamp: Date.now()
-          }
-        ],
-        present: action.payload,
-        future: []
-      }
-    }
+  const newEntry = {
+    state: state.present,
+    actionType: action.actionType,
+    timestamp: Date.now()
+  }
+
+  const newPast =
+    state.past.length >= MAX_HISTORY
+      ? [...state.past.slice(1), newEntry]
+      : [...state.past, newEntry]
+
+  return {
+    past: newPast,
+    present: action.payload,
+    future: []
+  }
+}
 
     case "UNDO": {
       console.log("UNDO", state)
@@ -121,12 +125,18 @@ export default function EditorPage() {
       ],
     },
   ]
+  // 🔥 Restore saved chapters per chapter
+const restoredChapters = initialChapters.map(chapter => {
+  const saved = localStorage.getItem(`manga-autosave:${chapter.id}`)
+  return saved ? JSON.parse(saved) : chapter
+})
+  
 
   const [history, dispatch] = useReducer(
     historyReducer<Chapter[]>,
     {
       past: [],
-      present: initialChapters,
+      present: restoredChapters,
       future: []
     }
   )
@@ -143,7 +153,11 @@ const handleRedo = () => {
 }
 
   const chapters = history.present
-
+  // 🔥 Save lifecycle state
+const [saveStatus, setSaveStatus] = useState<
+  "idle" | "dirty" | "saving" | "saved"
+>("idle")
+  
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0)
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
   const [currentPanelIndex, setCurrentPanelIndex] = useState(0)
@@ -344,6 +358,41 @@ const driftState = detectDrift()
       width: 24,
     })
   }, [currentPanelIndex, currentPageIndex])
+  // 🔥 Mark chapter dirty when it changes
+const [pendingSaveData, setPendingSaveData] = useState<Chapter | null>(null)
+
+useEffect(() => {
+  const chapter = history.present[currentChapterIndex]
+  if (!chapter) return
+
+  setPendingSaveData(chapter)
+  setSaveStatus("dirty")
+}, [history.present[currentChapterIndex]])
+
+// 🔥 Debounced autosave per chapter
+useEffect(() => {
+  if (history.past.length === 0) return
+
+  setSaveStatus("saving")
+
+  const timeout = setTimeout(() => {
+    try {
+      const chapter = history.present[currentChapterIndex]
+      if (!chapter) return
+
+      const key = `manga-autosave:${chapter.id}`
+      localStorage.setItem(key, JSON.stringify(chapter))
+
+      setSaveStatus("saved")
+    } catch (err) {
+      console.error("Autosave failed:", err)
+      setSaveStatus("idle")
+    }
+  }, 1500)
+
+  return () => clearTimeout(timeout)
+
+}, [history.past.length])
 
   /* ===============================
      PANEL ACTIONS
@@ -574,6 +623,21 @@ dispatch({
             <span>{currentChapter?.title}</span>
             <span>Page {currentPageIndex + 1}</span>
             <span>{currentPanels.length} Panels</span>
+            <span
+  className={`ml-6 text-xs ${
+    saveStatus === "saved"
+      ? "text-green-400"
+      : saveStatus === "saving"
+      ? "text-yellow-400"
+      : saveStatus === "dirty"
+      ? "text-orange-400"
+      : "text-zinc-500"
+  }`}
+>
+  {saveStatus === "dirty" && "Unsaved changes"}
+  {saveStatus === "saving" && "Saving..."}
+  {saveStatus === "saved" && "Saved"}
+</span>
           </div>
         </div>
 
@@ -600,7 +664,9 @@ dispatch({
                 return (
                   <button
                     key={index}
-                    ref={(el) => (panelRefs.current[index] = el)}
+                    ref={(el) => {
+                      panelRefs.current[index] = el
+                    }}
                     onClick={() => setCurrentPanelIndex(index)}
                     className="flex flex-col items-center group"
                   >
