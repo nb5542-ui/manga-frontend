@@ -153,10 +153,21 @@ const handleRedo = () => {
 }
 
   const chapters = history.present
+  // 🔥 Activity Entries (Last 200)
+const activityEntries = [
+  ...history.past,
+  {
+    state: history.present,
+    actionType: "CURRENT_STATE",
+    timestamp: Date.now()
+  }
+].slice(-200)
   // 🔥 Save lifecycle state
 const [saveStatus, setSaveStatus] = useState<
   "idle" | "dirty" | "saving" | "saved"
 >("idle")
+// 🔥 Activity Drawer State
+const [isActivityOpen, setIsActivityOpen] = useState(false)
   
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0)
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
@@ -331,6 +342,22 @@ const driftState = detectDrift()
 
   window.addEventListener("keydown", handleKeyDown)
   return () => window.removeEventListener("keydown", handleKeyDown)
+}, [])
+
+  // 🔥 Toggle Activity Drawer (Ctrl+Shift+L)
+useEffect(() => {
+  const handleToggle = (e: KeyboardEvent) => {
+    const isMac = navigator.platform.toUpperCase().includes("MAC")
+    const ctrlKey = isMac ? e.metaKey : e.ctrlKey
+
+    if (ctrlKey && e.shiftKey && e.key.toLowerCase() === "l") {
+      e.preventDefault()
+      setIsActivityOpen(prev => !prev)
+    }
+  }
+
+  window.addEventListener("keydown", handleToggle)
+  return () => window.removeEventListener("keydown", handleToggle)
 }, [])
 
 
@@ -618,28 +645,39 @@ dispatch({
       {/* CENTER COLUMN */}
       <div className="flex-1 flex flex-col">
 
-        <div className="h-12 border-b border-zinc-800 flex items-center px-6 text-sm text-zinc-400">
-          <div className="flex gap-6">
-            <span>{currentChapter?.title}</span>
-            <span>Page {currentPageIndex + 1}</span>
-            <span>{currentPanels.length} Panels</span>
-            <span
-  className={`ml-6 text-xs ${
-    saveStatus === "saved"
-      ? "text-green-400"
-      : saveStatus === "saving"
-      ? "text-yellow-400"
-      : saveStatus === "dirty"
-      ? "text-orange-400"
-      : "text-zinc-500"
-  }`}
->
-  {saveStatus === "dirty" && "Unsaved changes"}
-  {saveStatus === "saving" && "Saving..."}
-  {saveStatus === "saved" && "Saved"}
-</span>
-          </div>
-        </div>
+       <div className="h-12 border-b border-zinc-800 flex items-center justify-between px-6 text-sm text-zinc-400">
+  
+  <div className="flex gap-6 items-center">
+    <span>{currentChapter?.title}</span>
+    <span>Page {currentPageIndex + 1}</span>
+    <span>{currentPanels.length} Panels</span>
+
+    <span
+      className={`ml-6 text-xs ${
+        saveStatus === "saved"
+          ? "text-green-400"
+          : saveStatus === "saving"
+          ? "text-yellow-400"
+          : saveStatus === "dirty"
+          ? "text-orange-400"
+          : "text-zinc-500"
+      }`}
+    >
+      {saveStatus === "dirty" && "Unsaved changes"}
+      {saveStatus === "saving" && "Saving..."}
+      {saveStatus === "saved" && "Saved"}
+    </span>
+  </div>
+
+  {/* 🔥 Activity Button */}
+  <button
+    onClick={() => setIsActivityOpen(true)}
+    className="text-xs text-zinc-500 hover:text-white transition-colors"
+  >
+    Activity
+  </button>
+
+</div>
 
         <div className="flex-1 px-10 py-10 overflow-auto">
 
@@ -777,46 +815,45 @@ dispatch({
             </div>
 
             <div>
-  <div className="text-xs uppercase text-zinc-600 mb-2">
-    Panel State
-  </div>
+              <div className="text-xs uppercase text-zinc-600 mb-2">
+                Panel State
+              </div>
 
-  <div
-    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-      narrativeState === "Empty"
-        ? "bg-zinc-800 text-zinc-400"
-        : narrativeState === "Light"
-        ? "bg-blue-900/40 text-blue-400"
-        : narrativeState === "Dense"
-        ? "bg-purple-900/40 text-purple-400"
-        : "bg-red-900/40 text-red-400"
-    }`}
-  >
-    {narrativeState}
-  </div>
-</div>
-{/* DRIFT ANALYSIS */}
-<div>
-  <div className="text-xs uppercase text-zinc-600 mb-2">
-    Narrative Drift
-  </div>
+              <div
+                className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                  narrativeState === "Empty"
+                    ? "bg-zinc-800 text-zinc-400"
+                    : narrativeState === "Light"
+                    ? "bg-blue-900/40 text-blue-400"
+                    : narrativeState === "Dense"
+                    ? "bg-purple-900/40 text-purple-400"
+                    : "bg-red-900/40 text-red-400"
+                }`}
+              >
+                {narrativeState}
+              </div>
+            </div>
 
-  <div
-    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-      driftState === "Start"
-        ? "bg-zinc-800 text-zinc-400"
-        : driftState === "Stable"
-        ? "bg-green-900/40 text-green-400"
-        : driftState === "Gradual Shift"
-        ? "bg-yellow-900/40 text-yellow-400"
-        : "bg-red-900/40 text-red-400"
-    }`}
-  >
-    {driftState}
-  </div>
-</div>
+            {/* DRIFT ANALYSIS */}
+            <div>
+              <div className="text-xs uppercase text-zinc-600 mb-2">
+                Narrative Drift
+              </div>
 
-
+              <div
+                className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                  driftState === "Start"
+                    ? "bg-zinc-800 text-zinc-400"
+                    : driftState === "Stable"
+                    ? "bg-green-900/40 text-green-400"
+                    : driftState === "Gradual Shift"
+                    ? "bg-yellow-900/40 text-yellow-400"
+                    : "bg-red-900/40 text-red-400"
+                }`}
+              >
+                {driftState}
+              </div>
+            </div>
 
             <div>
               <div className="text-xs uppercase text-zinc-600 mb-2">
@@ -829,7 +866,43 @@ dispatch({
         )}
       </div>
 
+      {/* 🔥 ACTIVITY DRAWER */}
+      <div
+        className={`fixed bottom-0 left-0 right-0 h-72 bg-zinc-950 border-t border-zinc-800 transform transition-transform duration-300 z-50 ${
+          isActivityOpen ? "translate-y-0" : "translate-y-full"
+        }`}
+      >
+        <div className="h-full flex flex-col">
+
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-3 border-b border-zinc-800">
+            <span className="text-sm text-zinc-400 uppercase">
+              Activity Log
+            </span>
+
+            <button
+              onClick={() => setIsActivityOpen(false)}
+              className="text-xs text-zinc-500 hover:text-white"
+            >
+              Close
+            </button>
+          </div>
+
+          {/* Log Content */}
+          <div className="flex-1 overflow-y-auto px-6 py-4 text-xs text-zinc-400 space-y-2">
+            {activityEntries.map((entry, index) => (
+              <div key={index} className="flex justify-between">
+                <span>{entry.actionType}</span>
+                <span>
+                  {new Date(entry.timestamp).toLocaleTimeString()}
+                </span>
+              </div>
+            ))}
+          </div>
+
+        </div>
+      </div>
+
     </div>
   )
 }
-
