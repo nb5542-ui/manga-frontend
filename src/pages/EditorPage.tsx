@@ -346,6 +346,64 @@ const detectDrift = () => {
   if (driftScore <= 2) return "Gradual Shift"
   return "Sharp Shift"
 }
+// ===============================
+// CHAPTER HEALTH CALCULATOR
+// ===============================
+
+const calculateChapterHealth = () => {
+  if (!currentChapter) return 0
+
+  const panels = currentChapter.pages.flatMap(page => page.panels)
+  if (panels.length === 0) return 0
+  const emptyPanels = panels.filter(p => !p.text.trim()).length
+  const emptyRatio = emptyPanels / panels.length
+
+  // ---- Density Score ----
+  const densities = panels.map(p => detectDensity(p.text))
+  const heavyCount = densities.filter(d => d === "Heavy").length
+  const emptyCount = densities.filter(d => d === "Empty").length
+
+  let densityScore = 25
+  if (heavyCount > panels.length * 0.5) densityScore -= 10
+  if (emptyCount > panels.length * 0.5) densityScore -= 10
+
+  // ---- Tone Diversity ----
+  const tones = panels.map(p => detectTone(p.text))
+  const uniqueTones = new Set(tones).size
+
+  let toneScore = uniqueTones >= 3 ? 25 : uniqueTones === 2 ? 18 : 10
+
+  // ---- Intensity Spread ----
+  const intensities = panels.map(p => detectIntensity(p.text))
+  const uniqueIntensity = new Set(intensities).size
+
+  let intensityScore = uniqueIntensity >= 3 ? 25 : uniqueIntensity === 2 ? 18 : 10
+
+  // ---- Drift Stability ----
+  let driftShifts = 0
+
+  for (let i = 1; i < panels.length; i++) {
+    const prevTone = detectTone(panels[i - 1].text)
+    const currTone = detectTone(panels[i].text)
+    if (prevTone !== currTone) driftShifts++
+  }
+
+  let driftScore =
+    driftShifts <= panels.length * 0.3 ? 25 :
+    driftShifts <= panels.length * 0.6 ? 18 :
+    10
+
+  let total = densityScore + toneScore + intensityScore + driftScore
+
+// 🚨 Hard penalty for mostly empty chapters
+if (emptyRatio > 0.7) {
+  total = Math.min(total, 30)
+}
+
+return Math.max(0, Math.min(100, total))
+}
+const chapterHealth = calculateChapterHealth()
+
 const driftState = detectDrift()
 
 
@@ -597,6 +655,33 @@ commit(updated, "UPDATE_PANEL_TEXT")
 
   commit(updated, "RENAME_CHAPTER")
 }
+const reloadFromStorage = () => {
+  const chapter = history.present[currentChapterIndex]
+  if (!chapter) return
+
+  const key = `manga-autosave:${chapter.id}`
+  const saved = localStorage.getItem(key)
+
+  if (!saved) return
+
+  const parsedChapter = JSON.parse(saved)
+
+  const updated = chapters.map((c, index) =>
+    index === currentChapterIndex ? parsedChapter : c
+  )
+
+  // update version from storage
+  const savedVersion = localStorage.getItem(
+    `manga-version:${chapter.id}`
+  )
+
+  if (savedVersion) {
+    setVersion(Number(savedVersion))
+  }
+
+  commit(updated, "RELOAD_FROM_STORAGE")
+  setHasExternalUpdate(false)
+}
 
 
   /* ===============================
@@ -700,9 +785,17 @@ commit(updated, "UPDATE_PANEL_TEXT")
   v{version}
 </span>
 {hasExternalUpdate && (
-  <span className="text-xs text-red-400 ml-4">
-    External changes detected
-  </span>
+  <div className="flex items-center gap-3 ml-4">
+    <span className="text-xs text-red-400">
+      External changes detected
+    </span>
+    <button
+      onClick={reloadFromStorage}
+      className="text-xs px-2 py-1 border border-red-400 text-red-400 rounded hover:bg-red-400 hover:text-black transition-colors"
+    >
+      Reload
+    </button>
+  </div>
 )}
   </div>
 
@@ -837,6 +930,28 @@ commit(updated, "UPDATE_PANEL_TEXT")
 
         {currentPanel && (
           <div className="space-y-8 text-zinc-300">
+            <div>
+  <div className="text-xs uppercase text-zinc-600 mb-2">
+    Chapter Health
+  </div>
+
+  <div className="flex items-center gap-3">
+    <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden">
+      <div
+        className={`h-full transition-all duration-500 ${
+          chapterHealth > 75
+            ? "bg-green-500"
+            : chapterHealth > 50
+            ? "bg-yellow-500"
+            : "bg-red-500"
+        }`}
+        style={{ width: `${chapterHealth}%` }}
+      />
+    </div>
+    <span className="text-xs">{chapterHealth}%</span>
+  </div>
+</div>
+          
             <div>
               <div className="text-xs uppercase text-zinc-600 mb-2">
                 Emotional Tone
