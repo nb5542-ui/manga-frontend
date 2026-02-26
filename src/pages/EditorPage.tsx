@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useReducer } from "react"
 
+
+
 import PanelEditor from "../components/panel/PanelEditor"
 
 interface Panel {
@@ -151,6 +153,15 @@ const handleRedo = () => {
   isRestoringRef.current = true
   dispatch({ type: "REDO" })
 }
+const commit = (payload: Chapter[], actionType: string) => {
+  setVersion(prev => prev + 1)
+
+  dispatch({
+    type: "SET_STATE",
+    payload,
+    actionType
+  })
+}
 
   const chapters = history.present
   // 🔥 Activity Entries (Last 200)
@@ -166,10 +177,47 @@ const activityEntries = [
 const [saveStatus, setSaveStatus] = useState<
   "idle" | "dirty" | "saving" | "saved"
 >("idle")
+const [version, setVersion] = useState(1)
 // 🔥 Activity Drawer State
 const [isActivityOpen, setIsActivityOpen] = useState(false)
   
-  const [currentChapterIndex, setCurrentChapterIndex] = useState(0)
+const [currentChapterIndex, setCurrentChapterIndex] = useState(0)
+// 🔹 Multi-tab conflict detection
+const [hasExternalUpdate, setHasExternalUpdate] = useState(false)
+useEffect(() => {
+  const chapter = history.present[currentChapterIndex]
+  if (!chapter) return
+
+  const savedVersion = localStorage.getItem(`manga-version:${chapter.id}`)
+  if (savedVersion) {
+    setVersion(Number(savedVersion))
+  }
+}, [])
+// 🔹 Listen for external tab updates
+useEffect(() => {
+  const handleStorageChange = (e: StorageEvent) => {
+    if (!e.key) return
+
+    const chapter = history.present[currentChapterIndex]
+    if (!chapter) return
+
+    const versionKey = `manga-version:${chapter.id}`
+
+    if (e.key === versionKey && e.newValue) {
+      const externalVersion = Number(e.newValue)
+
+      if (externalVersion > version) {
+        setHasExternalUpdate(true)
+      }
+    }
+  }
+
+  window.addEventListener("storage", handleStorageChange)
+
+  return () => {
+    window.removeEventListener("storage", handleStorageChange)
+  }
+}, [version, currentChapterIndex, history.present])
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
   const [currentPanelIndex, setCurrentPanelIndex] = useState(0)
 
@@ -409,6 +457,7 @@ useEffect(() => {
 
       const key = `manga-autosave:${chapter.id}`
       localStorage.setItem(key, JSON.stringify(chapter))
+      localStorage.setItem(`manga-version:${chapter.id}`, version.toString())
 
       setSaveStatus("saved")
     } catch (err) {
@@ -454,11 +503,7 @@ useEffect(() => {
   return
 }
 
-dispatch({
-  type: "SET_STATE",
-  payload: updated,
-  actionType: "UPDATE_PANEL_TEXT"
-})
+commit(updated, "UPDATE_PANEL_TEXT")
 }
 
 
@@ -495,11 +540,7 @@ dispatch({
     }
   })
 
-  dispatch({
-    type: "SET_STATE",
-    payload: updated,
-    actionType: "CREATE_PANEL"
-  })
+  commit(updated, "CREATE_PANEL")
 
   setCurrentPanelIndex(currentPanels.length)
 }
@@ -523,11 +564,7 @@ dispatch({
 
   const newPageIndex = currentChapter.pages.length
 
-  dispatch({
-    type: "SET_STATE",
-    payload: updated,
-    actionType: "CREATE_PAGE"
-  })
+  commit(updated, "ADD_PAGE")
 
   setCurrentPageIndex(newPageIndex)
   setCurrentPanelIndex(0)
@@ -549,11 +586,7 @@ dispatch({
     },
   ]
 
-  dispatch({
-    type: "SET_STATE",
-    payload: updated,
-    actionType: "CREATE_CHAPTER"
-  })
+  commit(updated, "ADD_CHAPTER")
 }
 
 
@@ -562,11 +595,7 @@ dispatch({
     i === index ? { ...chapter, title } : chapter
   )
 
-  dispatch({
-    type: "SET_STATE",
-    payload: updated,
-    actionType: "RENAME_CHAPTER"
-  })
+  commit(updated, "RENAME_CHAPTER")
 }
 
 
@@ -667,6 +696,14 @@ dispatch({
       {saveStatus === "saving" && "Saving..."}
       {saveStatus === "saved" && "Saved"}
     </span>
+    <span className="text-xs text-zinc-500">
+  v{version}
+</span>
+{hasExternalUpdate && (
+  <span className="text-xs text-red-400 ml-4">
+    External changes detected
+  </span>
+)}
   </div>
 
   {/* 🔥 Activity Button */}
