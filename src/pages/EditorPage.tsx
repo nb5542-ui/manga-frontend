@@ -184,6 +184,18 @@ const [isActivityOpen, setIsActivityOpen] = useState(false)
 const [currentChapterIndex, setCurrentChapterIndex] = useState(0)
 // 🔹 Multi-tab conflict detection
 const [hasExternalUpdate, setHasExternalUpdate] = useState(false)
+// 🔹 Layout resize state
+const [sidebarWidth, setSidebarWidth] = useState(() => {
+  const saved = localStorage.getItem("layout-sidebar-width")
+  return saved ? Number(saved) : 288
+})
+
+const [intelligenceWidth, setIntelligenceWidth] = useState(() => {
+  const saved = localStorage.getItem("layout-intelligence-width")
+  return saved ? Number(saved) : 320
+})
+
+const [isDragging, setIsDragging] = useState<null | "sidebar" | "intelligence">(null)
 useEffect(() => {
   const chapter = history.present[currentChapterIndex]
   if (!chapter) return
@@ -449,6 +461,40 @@ const driftState = detectDrift()
   window.addEventListener("keydown", handleKeyDown)
   return () => window.removeEventListener("keydown", handleKeyDown)
 }, [])
+useEffect(() => {
+  localStorage.setItem("layout-sidebar-width", sidebarWidth.toString())
+}, [sidebarWidth])
+
+useEffect(() => {
+  localStorage.setItem("layout-intelligence-width", intelligenceWidth.toString())
+}, [intelligenceWidth])
+useEffect(() => {
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDragging) return
+
+    if (isDragging === "sidebar") {
+      const newWidth = Math.min(Math.max(e.clientX, 220), 500)
+      setSidebarWidth(newWidth)
+    }
+
+    if (isDragging === "intelligence") {
+      const newWidth = Math.min(Math.max(window.innerWidth - e.clientX, 260), 500)
+      setIntelligenceWidth(newWidth)
+    }
+  }
+
+  const handleMouseUp = () => {
+    setIsDragging(null)
+  }
+
+  window.addEventListener("mousemove", handleMouseMove)
+  window.addEventListener("mouseup", handleMouseUp)
+
+  return () => {
+    window.removeEventListener("mousemove", handleMouseMove)
+    window.removeEventListener("mouseup", handleMouseUp)
+  }
+}, [isDragging])
 
   // 🔥 Toggle Activity Drawer (Ctrl+Shift+L)
 useEffect(() => {
@@ -692,7 +738,10 @@ const reloadFromStorage = () => {
     <div className="h-screen bg-black flex text-white">
 
       {/* SIDEBAR */}
-      <div className="w-72 border-r border-zinc-800 bg-zinc-950 p-5 overflow-y-auto">
+      <div
+  style={{ width: sidebarWidth }}
+  className="border-r border-zinc-800 bg-zinc-950 p-5 overflow-y-auto"
+>
         <div className="text-xs text-zinc-500 uppercase mb-4">
           Chapters
         </div>
@@ -755,6 +804,10 @@ const reloadFromStorage = () => {
           + Add Chapter
         </button>
       </div>
+      <div
+  onMouseDown={() => setIsDragging("sidebar")}
+  className="w-1 cursor-col-resize bg-zinc-800 hover:bg-white transition-colors"
+/>
 
       {/* CENTER COLUMN */}
       <div className="flex-1 flex flex-col">
@@ -921,9 +974,16 @@ const reloadFromStorage = () => {
 
         </div>
       </div>
+      <div
+  onMouseDown={() => setIsDragging("intelligence")}
+  className="w-1 cursor-col-resize bg-zinc-800 hover:bg-white transition-colors"
+/>
 
       {/* INTELLIGENCE PANEL (unchanged) */}
-      <div className="w-80 border-l border-zinc-800 bg-zinc-950 p-6 text-sm">
+      <div
+  style={{ width: intelligenceWidth }}
+  className="border-l border-zinc-800 bg-zinc-950 p-6 text-sm"
+>
         <div className="uppercase text-xs mb-6 text-zinc-600">
           Intelligence
         </div>
