@@ -180,6 +180,7 @@ const [saveStatus, setSaveStatus] = useState<
 const [version, setVersion] = useState(1)
 // 🔥 Activity Drawer State
 const [isActivityOpen, setIsActivityOpen] = useState(false)
+const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
   
 const [currentChapterIndex, setCurrentChapterIndex] = useState(0)
 // 🔹 Multi-tab conflict detection
@@ -201,8 +202,15 @@ useEffect(() => {
   if (!chapter) return
 
   const savedVersion = localStorage.getItem(`manga-version:${chapter.id}`)
+
   if (savedVersion) {
-    setVersion(Number(savedVersion))
+    const parsed = Number(savedVersion)
+
+    if (parsed > version) {
+      setShowRecoveryPrompt(true)
+    }
+
+    setVersion(parsed)
   }
 }, [])
 // 🔹 Listen for external tab updates
@@ -1108,6 +1116,36 @@ const reloadFromStorage = () => {
                 <span>
                   {new Date(entry.timestamp).toLocaleTimeString()}
                 </span>
+                {showRecoveryPrompt && (
+  <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+    <div className="bg-zinc-900 border border-zinc-700 p-6 rounded-xl w-96">
+      <h2 className="text-sm uppercase text-zinc-400 mb-4">
+        Recovery Available
+      </h2>
+
+      <p className="text-sm text-zinc-300 mb-6">
+        We found a newer autosaved version of this chapter.
+        Would you like to restore it?
+      </p>
+
+      <div className="flex justify-end gap-4">
+        <button
+          onClick={() => setShowRecoveryPrompt(false)}
+          className="text-sm text-zinc-400 hover:text-white"
+        >
+          Ignore
+        </button>
+
+        <button
+          onClick={reloadFromStorage}
+          className="text-sm px-4 py-2 bg-white text-black rounded-md"
+        >
+          Restore
+        </button>
+      </div>
+    </div>
+  </div>
+)}
               </div>
             ))}
           </div>
