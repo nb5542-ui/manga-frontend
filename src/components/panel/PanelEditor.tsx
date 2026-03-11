@@ -14,6 +14,7 @@ interface Props {
 
 }
 
+
 export default function PanelEditor({
   panelNumber,
   panelText,
@@ -26,6 +27,7 @@ export default function PanelEditor({
   onUndo,
   onRedo,
 }: Props) {
+  const [isFocused, setIsFocused] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [localText, setLocalText] = useState(panelText)
 
@@ -83,20 +85,24 @@ useEffect(() => {
 
   return (
     <div
-      className="
-        animate-fade
-        flex flex-col h-[75vh]
-        bg-gradient-to-br from-zinc-900 to-zinc-950
-        rounded-2xl
-        p-8
-        border border-zinc-800
-        shadow-xl
+  className={`
+    animate-fade flex flex-col h-[75vh]
 
-        transition-all duration-300
-        focus-within:border-zinc-600
-        focus-within:shadow-[0_0_0_1px_rgba(255,255,255,0.08)]
-      "
-    >
+    bg-gradient-to-br from-zinc-900 via-zinc-900 to-black
+    rounded-2xl
+    p-10
+
+    border
+    ${
+      isFocused
+        ? "border-zinc-500 shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_20px_60px_rgba(0,0,0,0.9)]"
+        : "border-zinc-800 shadow-[0_20px_50px_rgba(0,0,0,0.6)]"
+    }
+
+    backdrop-blur-sm
+    transition-all duration-300
+  `}
+>
       {/* Header */}
       <div className="flex items-center justify-between border-b border-zinc-800 pb-4 mb-6">
         <div className="text-xs uppercase tracking-wider text-zinc-500">
@@ -129,21 +135,28 @@ useEffect(() => {
         ref={textareaRef}
         value={localText}
         onChange={(e) => setLocalText(e.target.value)}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+        
 
         onKeyDown={handleKeyDown}
         className="
-          flex-1 w-full resize-none bg-transparent
-          outline-none
+  w-full flex-1 resize-none bg-transparent outline-none
 
-          text-[18px]
-          leading-8
-          tracking-wide
-          font-light
+  text-zinc-200
+  placeholder:text-zinc-600
 
-          text-zinc-100
-          placeholder:text-zinc-600
-          caret-white
-        "
+  text-[17px]
+  leading-[1.8]
+
+  tracking-[0.01em]
+
+  caret-white
+
+  selection:bg-white/20
+
+  transition-colors duration-200
+"
         placeholder="Write panel dialogue or narration..."
       />
 

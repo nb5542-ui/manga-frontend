@@ -1,36 +1,18 @@
 import { useState, useRef, useEffect, useReducer } from "react"
+import EditorToolbar from "../components/panel/editor/EditorToolbar"
+
 
 
 
 import PanelEditor from "../components/panel/PanelEditor"
 
-interface Panel {
-  id: string
-  text: string
-}
-
-interface Page {
-  id: string
-  panels: Panel[]
-}
-
-interface Chapter {
-  id: string
-  title: string
-  pages: Page[]
-}
-
-interface HistoryEntry<T> {
-  state: T
-  actionType: string
-  timestamp: number
-}
-
-interface HistoryState<T> {
-  past: HistoryEntry<T>[]
-  present: T
-  future: HistoryEntry<T>[]
-}
+import type {
+  Panel,
+  Page,
+  Chapter,
+  HistoryEntry,
+  HistoryState
+} from "./src/types/editorTypes"
 const MAX_HISTORY = 100
 
 type HistoryAction<T> =
@@ -743,11 +725,10 @@ const reloadFromStorage = () => {
   =============================== */
 
   return (
-    <div className="h-screen bg-black flex text-white">
+    <div className="h-screen bg-[#050505] flex text-white">
 
       {/* SIDEBAR */}
       <div
-  style={{ width: sidebarWidth }}
   className="border-r border-zinc-800 bg-zinc-950 p-5 overflow-y-auto"
 >
         <div className="text-xs text-zinc-500 uppercase mb-4">
@@ -820,55 +801,16 @@ const reloadFromStorage = () => {
       {/* CENTER COLUMN */}
       <div className="flex-1 flex flex-col">
 
-       <div className="h-12 border-b border-zinc-800 flex items-center justify-between px-6 text-sm text-zinc-400">
-  
-  <div className="flex gap-6 items-center">
-    <span>{currentChapter?.title}</span>
-    <span>Page {currentPageIndex + 1}</span>
-    <span>{currentPanels.length} Panels</span>
-
-    <span
-      className={`ml-6 text-xs ${
-        saveStatus === "saved"
-          ? "text-green-400"
-          : saveStatus === "saving"
-          ? "text-yellow-400"
-          : saveStatus === "dirty"
-          ? "text-orange-400"
-          : "text-zinc-500"
-      }`}
-    >
-      {saveStatus === "dirty" && "Unsaved changes"}
-      {saveStatus === "saving" && "Saving..."}
-      {saveStatus === "saved" && "Saved"}
-    </span>
-    <span className="text-xs text-zinc-500">
-  v{version}
-</span>
-{hasExternalUpdate && (
-  <div className="flex items-center gap-3 ml-4">
-    <span className="text-xs text-red-400">
-      External changes detected
-    </span>
-    <button
-      onClick={reloadFromStorage}
-      className="text-xs px-2 py-1 border border-red-400 text-red-400 rounded hover:bg-red-400 hover:text-black transition-colors"
-    >
-      Reload
-    </button>
-  </div>
-)}
-  </div>
-
-  {/* 🔥 Activity Button */}
-  <button
-    onClick={() => setIsActivityOpen(true)}
-    className="text-xs text-zinc-500 hover:text-white transition-colors"
-  >
-    Activity
-  </button>
-
-</div>
+      <EditorToolbar
+  chapterTitle={currentChapter?.title}
+  pageIndex={currentPageIndex}
+  panelCount={currentPanels.length}
+  saveStatus={saveStatus}
+  version={version}
+  hasExternalUpdate={hasExternalUpdate}
+  onReload={reloadFromStorage}
+  onOpenActivity={() => setIsActivityOpen(true)}
+/>
 
         <div className="flex-1 px-10 py-10 overflow-auto">
 
@@ -989,7 +931,6 @@ const reloadFromStorage = () => {
 
       {/* INTELLIGENCE PANEL (unchanged) */}
       <div
-  style={{ width: intelligenceWidth }}
   className="border-l border-zinc-800 bg-zinc-950 p-6 text-sm"
 >
         <div className="uppercase text-xs mb-6 text-zinc-600">
