@@ -48,14 +48,47 @@ export default function EditorToolbar({
 
         <span>{panelCount} Panels</span>
 
-        <span className={`text-xs ${saveColor}`}>
-          {saveLabel}
-        </span>
+        <div className="flex items-center gap-2 text-xs">
 
-        <span className="text-xs text-zinc-500">
-          v{version}
-        </span>
+  <div
+    className={`
+      w-2 h-2 rounded-full
 
+      ${
+        saveStatus === "saved"
+          ? "bg-green-400"
+          : saveStatus === "saving"
+          ? "bg-yellow-400 animate-pulse"
+          : saveStatus === "dirty"
+          ? "bg-orange-400"
+          : "bg-zinc-500"
+      }
+    `}
+  />
+
+  <span
+    className={`
+      transition-colors duration-200
+
+      ${
+        saveStatus === "saved"
+          ? "text-green-400"
+          : saveStatus === "saving"
+          ? "text-yellow-400"
+          : saveStatus === "dirty"
+          ? "text-orange-400"
+          : "text-zinc-500"
+      }
+    `}
+  >
+    {saveLabel}
+  </span>
+
+</div>
+
+        <span className="text-xs text-zinc-500 transition-opacity duration-300">
+  v{version}
+</span>
         {hasExternalUpdate && (
           <div className="flex items-center gap-3 ml-4">
             <span className="text-xs text-red-400">

@@ -729,7 +729,7 @@ const reloadFromStorage = () => {
 
       {/* SIDEBAR */}
       <div
-  className="border-r border-zinc-800 bg-zinc-950 p-5 overflow-y-auto"
+  className="border-r border-zinc-800 bg-zinc-950 p-5 overflow-y-auto scroll-smooth"
 >
         <div className="text-xs text-zinc-500 uppercase mb-4">
           Chapters
@@ -745,11 +745,23 @@ const reloadFromStorage = () => {
                 setCurrentPageIndex(0)
                 setCurrentPanelIndex(0)
               }}
-              className={`w-full bg-transparent outline-none text-sm ${
-                cIndex === currentChapterIndex
-                  ? "text-white"
-                  : "text-zinc-500"
-              }`}
+              className={`
+  w-full
+  bg-transparent
+  outline-none
+  text-sm
+
+  px-2 py-1
+  rounded-md
+
+  transition-all duration-200
+
+  ${
+    cIndex === currentChapterIndex
+      ? "text-white bg-zinc-800"
+      : "text-zinc-500 hover:text-white hover:bg-zinc-900"
+  }
+`}
             />
 
             {cIndex === currentChapterIndex && (
@@ -765,33 +777,68 @@ const reloadFromStorage = () => {
                       setCurrentPageIndex(pIndex)
                       setCurrentPanelIndex(0)
                     }}
-                    className={`block text-sm mb-1 ${
-                      pIndex === currentPageIndex
-                        ? "text-white"
-                        : "text-zinc-500 hover:text-zinc-300"
-                    }`}
+                    className={`
+  block text-sm mb-1
+
+  px-2 py-1
+  rounded-md
+
+  transition-all duration-200
+
+  ${
+    pIndex === currentPageIndex
+      ? "text-white bg-zinc-800"
+      : "text-zinc-500 hover:text-white hover:bg-zinc-900"
+  }
+`}
                   >
                     Page {pIndex + 1}
                   </button>
                 ))}
 
                 <button
-                  onClick={addPage}
-                  className="text-xs text-zinc-500 hover:text-white mt-2"
-                >
-                  + Add Page
-                </button>
+  onClick={addPage}
+  className="
+    mt-2 text-xs
+
+    text-zinc-500
+    hover:text-white
+
+    px-2 py-1
+    rounded
+
+    transition-all duration-200
+
+    hover:bg-zinc-800
+    active:scale-95
+  "
+>
+  + Add Page
+</button>
               </div>
             )}
           </div>
         ))}
 
         <button
-          onClick={addChapter}
-          className="text-xs text-zinc-500 hover:text-white"
-        >
-          + Add Chapter
-        </button>
+  onClick={addChapter}
+  className="
+    text-xs
+
+    text-zinc-500
+    hover:text-white
+
+    px-2 py-1
+    rounded
+
+    transition-all duration-200
+
+    hover:bg-zinc-800
+    active:scale-95
+  "
+>
+  + Add Chapter
+</button>
       </div>
       <div
   onMouseDown={() => setIsDragging("sidebar")}
@@ -818,7 +865,7 @@ const reloadFromStorage = () => {
           <div className="relative mb-10">
             <div className="absolute top-1/2 left-0 w-full h-px bg-zinc-800 -translate-y-1/2" />
             <div
-              className="absolute bottom-0 h-[2px] bg-white transition-all duration-300"
+              className="absolute bottom-0 h-[2px] bg-white/90 transition-all duration-300 ease-out shadow-[0_0_8px_rgba(255,255,255,0.6)]"
               style={indicatorStyle}
             />
 
@@ -839,30 +886,46 @@ const reloadFromStorage = () => {
                       panelRefs.current[index] = el
                     }}
                     onClick={() => setCurrentPanelIndex(index)}
-                    className="flex flex-col items-center group"
+                    className="
+  flex flex-col items-center group
+
+  transition-all duration-200
+  cursor-pointer
+
+  hover:scale-105
+"
                   >
                     <div className="flex flex-col items-center gap-2">
 
                       {/* DOT */}
                       <div
-                        className={`w-4 h-4 rounded-full transition-all duration-200 ${
-                          isActive ? "scale-110" : ""
-                        } ${
-                          tone === "Positive"
-                            ? "bg-green-500"
-                            : tone === "Dark"
-                            ? "bg-red-500"
-                            : tone === "Aggressive"
-                            ? "bg-orange-500"
-                            : "bg-zinc-600"
-                        } ${
-                          intensityLevel === "High"
-                            ? "ring-2 ring-white"
-                            : intensityLevel === "Medium"
-                            ? "ring-1 ring-white/70"
-                            : ""
-                        } group-hover:brightness-125`}
-                      />
+  className={`
+  w-4 h-4 rounded-full
+
+  transition-all duration-300
+
+  ${isActive ? "scale-125 shadow-lg" : "scale-100"}
+
+  ${
+    tone === "Positive"
+      ? "bg-green-500"
+      : tone === "Dark"
+      ? "bg-red-500"
+      : tone === "Aggressive"
+      ? "bg-orange-500"
+      : "bg-zinc-500"
+  }
+
+  ${
+    isActive
+      ? "ring-2 ring-white/70 shadow-[0_0_10px_rgba(255,255,255,0.4)]"
+      : ""
+  }
+
+  group-hover:scale-110
+  group-hover:brightness-125
+`}
+/>
 
                       {/* DENSITY BAR */}
                       <div
@@ -878,12 +941,18 @@ const reloadFromStorage = () => {
                       />
 
                       <span
-                        className={`text-xs transition-colors ${
-                          isActive
-                            ? "text-white"
-                            : "text-zinc-500 group-hover:text-zinc-300"
-                        }`}
-                      >
+  className={`
+    text-xs
+
+    transition-all duration-200
+
+    ${
+      isActive
+        ? "text-white"
+        : "text-zinc-500 group-hover:text-zinc-300"
+    }
+  `}
+>
                         {index + 1}
                       </span>
 
@@ -893,11 +962,25 @@ const reloadFromStorage = () => {
               })}
 
               <button
-                onClick={createNewPanel}
-                className="ml-6 text-zinc-500 hover:text-white text-sm"
-              >
-                + Add Panel
-              </button>
+  onClick={createNewPanel}
+  className="
+    ml-6 text-sm
+
+    text-zinc-500
+    hover:text-white
+
+    px-3 py-1
+    rounded-md
+
+    transition-all duration-200
+
+    hover:bg-zinc-800
+    active:scale-95
+    active:bg-zinc-700
+  "
+>
+  + Add Panel
+</button>
             </div>
           </div>
 
@@ -1042,11 +1125,24 @@ const reloadFromStorage = () => {
             </span>
 
             <button
-              onClick={() => setIsActivityOpen(false)}
-              className="text-xs text-zinc-500 hover:text-white"
-            >
-              Close
-            </button>
+  onClick={() => setIsActivityOpen(false)}
+  className="
+    text-xs
+
+    text-zinc-500
+    hover:text-white
+
+    px-3 py-1
+    rounded-md
+
+    transition-all duration-200
+
+    hover:bg-zinc-800
+    active:scale-95
+  "
+>
+  Close
+</button>
           </div>
 
           {/* Log Content */}
