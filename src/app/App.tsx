@@ -1,5 +1,6 @@
-import EditorPage from "../pages/EditorPage"
+import AppRouter from "./AppRouter"
+
 
 export default function App() {
-  return <EditorPage />
+  return <AppRouter />
 }
