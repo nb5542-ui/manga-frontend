@@ -38,23 +38,26 @@ export default function DashboardPage() {
 
 
   const createStory = () => {
-    const newId = Date.now().toString()
+  const saved = localStorage.getItem("manga-stories")
 
-    const newStory = {
-      id: newId,
-      title: `Story ${stories.length + 1}`
-    }
+  const existing = saved ? JSON.parse(saved) : []
 
-    const updated = [...stories, newStory]
+  const newId = Date.now().toString()
 
-    setStories(updated)
-
-    localStorage.setItem(
-      "manga-stories",
-      JSON.stringify(updated)
-    )
+  const newStory = {
+    id: newId,
+    title: `Story ${existing.length + 1}`
   }
 
+  const updated = [...existing, newStory]
+
+  localStorage.setItem(
+    "manga-stories",
+    JSON.stringify(updated)
+  )
+
+  setStories(updated)
+}
 
   return (
     <div className="h-full bg-black text-white p-8">
