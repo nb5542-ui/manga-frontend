@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom"
 
 import AppShell from "./AppShell"
 import EditorPage from "../pages/EditorPage"
+import DashboardPage from "../pages/DashboardPage"
+<Route path="/app" element={<DashboardPage />} />
 
 export default function AppRouter() {
   return (
@@ -13,9 +15,9 @@ export default function AppRouter() {
 
           <Route path="/" element={<div>Landing</div>} />
 
-          <Route path="/app" element={<div>Dashboard</div>} />
+          <Route path="/app" element={<DashboardPage />} />
 
-          <Route path="/app/editor" element={<EditorPage />} />
+          <Route path="/app/story/:storyId/editor" element={<EditorPage />} />
 
         </Route>
 

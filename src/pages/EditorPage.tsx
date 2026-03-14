@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useReducer } from "react"
+import { useParams } from "react-router-dom"
 import EditorToolbar from "../components/panel/editor/EditorToolbar"
 
 
@@ -92,6 +93,7 @@ function historyReducer<T>(
 }
 
 export default function EditorPage() {
+    const { storyId } = useParams()
 
   /* ===============================
      STATE (NOW USING REDUCER)
@@ -111,7 +113,10 @@ export default function EditorPage() {
   ]
   // 🔥 Restore saved chapters per chapter
 const restoredChapters = initialChapters.map(chapter => {
-  const saved = localStorage.getItem(`manga-autosave:${chapter.id}`)
+  const saved = localStorage.getItem(
+    `manga-autosave:${storyId}:${chapter.id}`
+  )
+
   return saved ? JSON.parse(saved) : chapter
 })
   
@@ -183,7 +188,7 @@ useEffect(() => {
   const chapter = history.present[currentChapterIndex]
   if (!chapter) return
 
-  const savedVersion = localStorage.getItem(`manga-version:${chapter.id}`)
+  const savedVersion = localStorage.getItem(`manga-version:${storyId}:${chapter.id}`)
 
   if (savedVersion) {
     const parsed = Number(savedVersion)
@@ -203,7 +208,7 @@ useEffect(() => {
     const chapter = history.present[currentChapterIndex]
     if (!chapter) return
 
-    const versionKey = `manga-version:${chapter.id}`
+    const versionKey = `manga-version:${storyId}:${chapter.id}`
 
     if (e.key === versionKey && e.newValue) {
       const externalVersion = Number(e.newValue)
@@ -549,9 +554,9 @@ useEffect(() => {
       const chapter = history.present[currentChapterIndex]
       if (!chapter) return
 
-      const key = `manga-autosave:${chapter.id}`
+      const key = `manga-autosave:${storyId}:${chapter.id}`
       localStorage.setItem(key, JSON.stringify(chapter))
-      localStorage.setItem(`manga-version:${chapter.id}`, version.toString())
+      localStorage.setItem(`manga-version:${storyId}:${chapter.id}`, version.toString())
 
       setSaveStatus("saved")
     } catch (err) {
@@ -708,7 +713,7 @@ const reloadFromStorage = () => {
 
   // update version from storage
   const savedVersion = localStorage.getItem(
-    `manga-version:${chapter.id}`
+    `manga-version:${storyId}:${chapter.id}`
   )
 
   if (savedVersion) {
