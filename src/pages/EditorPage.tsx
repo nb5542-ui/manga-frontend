@@ -1019,52 +1019,162 @@ const reloadFromStorage = () => {
 
       {/* INTELLIGENCE PANEL (unchanged) */}
       <div
-  className="border-l border-zinc-800 bg-zinc-950 p-6 text-sm"
+  className="
+border-l border-zinc-800
+bg-[#060606]
+p-6
+text-sm
+w-[320px]
+flex flex-col
+gap-6
+"
 >
-        <div className="uppercase text-xs mb-6 text-zinc-600">
-          Intelligence
-        </div>
+        <div className="flex items-center justify-between">
+
+  <div className="uppercase text-xs text-zinc-500 tracking-wider">
+    Intelligence
+  </div>
+
+  <div className="text-[10px] text-zinc-600">
+    AI Panel
+  </div>
+
+</div>
 
         {currentPanel && (
-          <div className="space-y-8 text-zinc-300">
-            <div>
-  <div className="text-xs uppercase text-zinc-600 mb-2">
+          <div className="flex flex-col gap-6 text-zinc-300">
+            <div className="flex flex-col gap-2">
+
+  <div className="text-[11px] uppercase text-zinc-500">
     Chapter Health
   </div>
 
-  <div className="flex items-center gap-3">
-    <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden">
-      <div
-        className={`h-full transition-all duration-500 ${
+  <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+
+    <div
+      className={`
+        h-full transition-all duration-500
+
+        ${
           chapterHealth > 75
             ? "bg-green-500"
             : chapterHealth > 50
             ? "bg-yellow-500"
             : "bg-red-500"
-        }`}
-        style={{ width: `${chapterHealth}%` }}
-      />
-    </div>
-    <span className="text-xs">{chapterHealth}%</span>
+        }
+      `}
+      style={{ width: `${chapterHealth}%` }}
+    />
+    <div className="text-[11px] text-zinc-500">
+    {chapterHealth}% health
   </div>
+
+  </div>
+  {/* TIMELINE GRAPH */}
+
+<div className="mt-4 flex flex-col gap-2">
+
+  <div className="text-xs uppercase text-zinc-600">
+    Timeline
+  </div>
+
+  <div className="flex items-end gap-1 h-10 bg-zinc-900/40 px-2 py-2 rounded">
+
+    {currentPanels.map((panel, i) => {
+
+      const tone = detectTone(panel.text)
+      const density = detectDensity(panel.text)
+
+      let height = 4
+
+      if (density === "Light") height = 8
+      if (density === "Dense") height = 14
+      if (density === "Heavy") height = 20
+
+      let color = "bg-zinc-500"
+
+      if (tone === "Positive") color = "bg-green-500"
+      if (tone === "Dark") color = "bg-red-500"
+      if (tone === "Aggressive") color = "bg-orange-500"
+
+      return (
+
+        <div
+          key={i}
+          className={`w-2 rounded ${color}`}
+          style={{ height }}
+        />
+
+      )
+
+    })}
+
+  </div>
+
+</div>
+
+  
+
 </div>
           
-            <div>
-              <div className="text-xs uppercase text-zinc-600 mb-2">
-                Emotional Tone
-              </div>
-              <div>{emotionalTone}</div>
-            </div>
+            <div className="flex flex-col gap-1">
+
+  <div className="text-[11px] uppercase text-zinc-500">
+    Emotional Tone
+  </div>
+
+  <div
+    className={`
+      px-2 py-1
+      rounded-full
+      text-xs
+      w-fit
+
+      ${
+        emotionalTone === "Positive"
+          ? "bg-green-900/40 text-green-400"
+          : emotionalTone === "Dark"
+          ? "bg-red-900/40 text-red-400"
+          : emotionalTone === "Aggressive"
+          ? "bg-orange-900/40 text-orange-400"
+          : "bg-zinc-800 text-zinc-400"
+      }
+    `}
+  >
+    {emotionalTone}
+  </div>
+
+</div>
+
+            <div className="flex flex-col gap-1">
+
+  <div className="text-[11px] uppercase text-zinc-500">
+    Intensity
+  </div>
+
+  <div
+    className={`
+      px-2 py-1
+      rounded-full
+      text-xs
+      w-fit
+
+      ${
+        intensity === "High"
+          ? "bg-red-900/40 text-red-400"
+          : intensity === "Medium"
+          ? "bg-yellow-900/40 text-yellow-400"
+          : "bg-zinc-800 text-zinc-400"
+      }
+    `}
+  >
+    {intensity}
+  </div>
+
+</div>
 
             <div>
-              <div className="text-xs uppercase text-zinc-600 mb-2">
-                Intensity
-              </div>
-              <div>{intensity}</div>
-            </div>
-
-            <div>
-              <div className="text-xs uppercase text-zinc-600 mb-2">
+              <div className="text-[11px] uppercase text-zinc-500 mb-1 tracking-wide">
                 Panel State
               </div>
 
@@ -1085,32 +1195,53 @@ const reloadFromStorage = () => {
 
             {/* DRIFT ANALYSIS */}
             <div>
-              <div className="text-xs uppercase text-zinc-600 mb-2">
-                Narrative Drift
-              </div>
+              <div className="flex flex-col gap-1">
 
-              <div
-                className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                  driftState === "Start"
-                    ? "bg-zinc-800 text-zinc-400"
-                    : driftState === "Stable"
-                    ? "bg-green-900/40 text-green-400"
-                    : driftState === "Gradual Shift"
-                    ? "bg-yellow-900/40 text-yellow-400"
-                    : "bg-red-900/40 text-red-400"
-                }`}
-              >
-                {driftState}
-              </div>
+  <div className="text-[11px] uppercase text-zinc-500">
+    Narrative Drift
+  </div>
+
+  <div
+    className={`
+      px-2 py-1
+      rounded-full
+      text-xs
+      w-fit
+
+      ${
+        driftState === "Stable"
+          ? "bg-green-900/40 text-green-400"
+          : driftState === "Gradual Shift"
+          ? "bg-yellow-900/40 text-yellow-400"
+          : driftState === "Sharp Shift"
+          ? "bg-red-900/40 text-red-400"
+          : "bg-zinc-800 text-zinc-400"
+      }
+    `}
+  >
+    {driftState}
+  </div>
+
+</div>
+
+             
             </div>
 
-            <div>
-              <div className="text-xs uppercase text-zinc-600 mb-2">
-                Text Metrics
-              </div>
-              <div>Words: {wordCount}</div>
-              <div>Characters: {charCount}</div>
-            </div>
+            <div className="flex flex-col gap-1">
+
+  <div className="text-[11px] uppercase text-zinc-500">
+    Text Metrics
+  </div>
+
+  <div className="text-xs text-zinc-400">
+    Words: {wordCount}
+  </div>
+
+  <div className="text-xs text-zinc-400">
+    Characters: {charCount}
+  </div>
+
+</div>
           </div>
         )}
       </div>
