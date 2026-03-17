@@ -1232,6 +1232,49 @@ gap-6
   <div className="text-[11px] uppercase text-zinc-500">
     Text Metrics
   </div>
+  {/* AI SUGGESTIONS */}
+
+<div className="flex flex-col gap-2">
+
+  <div className="text-[11px] uppercase text-zinc-500">
+    Suggestions
+  </div>
+
+  <div className="flex flex-col gap-2 text-xs">
+
+    {wordCount < 5 && (
+      <div className="px-2 py-1 bg-zinc-900 rounded text-zinc-400">
+        • Add more dialogue or narration
+      </div>
+    )}
+
+    {intensity === "Low" && (
+      <div className="px-2 py-1 bg-zinc-900 rounded text-zinc-400">
+        • Increase emotional intensity
+      </div>
+    )}
+
+    {driftState === "Sharp Shift" && (
+      <div className="px-2 py-1 bg-zinc-900 rounded text-zinc-400">
+        • Reduce narrative drift
+      </div>
+    )}
+
+    {narrativeState === "Light" && (
+      <div className="px-2 py-1 bg-zinc-900 rounded text-zinc-400">
+        • Add more detail to this panel
+      </div>
+    )}
+
+    {narrativeState === "Dense" && (
+      <div className="px-2 py-1 bg-zinc-900 rounded text-zinc-400">
+        • Reduce dialogue density
+      </div>
+    )}
+
+  </div>
+
+</div>
 
   <div className="text-xs text-zinc-400">
     Words: {wordCount}
