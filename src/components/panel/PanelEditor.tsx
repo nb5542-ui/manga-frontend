@@ -30,6 +30,7 @@ export default function PanelEditor({
   const [isFocused, setIsFocused] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [localText, setLocalText] = useState(panelText)
+  const [showNotes, setShowNotes] = useState(false)
 
   useEffect(() => {
   setLocalText(panelText)
@@ -79,6 +80,21 @@ useEffect(() => {
       onCreate()
     }
   }
+}
+const getNotes = () => {
+  const match = panelText.match(/#notes([\s\S]*)/)
+  return match ? match[1].trim() : ""
+}
+
+const setNotes = (notes: string) => {
+  const cleaned = panelText.replace(/#notes([\s\S]*)/, "").trim()
+
+  const newText =
+    notes.trim().length > 0
+      ? cleaned + "\n\n#notes\n" + notes
+      : cleaned
+
+  onChange(newText)
 }
 
 
@@ -159,6 +175,45 @@ useEffect(() => {
 "
         placeholder="Write panel dialogue or narration..."
       />
+      {/* NOTES */}
+
+<div className="mt-4 border-t border-zinc-800 pt-3">
+
+  <button
+    onClick={() => setShowNotes(!showNotes)}
+    className="
+      text-xs
+      text-zinc-500
+      hover:text-white
+      mb-2
+    "
+  >
+    {showNotes ? "Hide Notes" : "Show Notes"}
+  </button>
+
+  {showNotes && (
+
+    <textarea
+      value={getNotes()}
+      onChange={(e) => setNotes(e.target.value)}
+      placeholder="Camera / Mood / Action / Notes..."
+      className="
+        w-full
+        bg-zinc-900
+        border border-zinc-800
+        rounded
+        p-2
+        text-xs
+        text-zinc-300
+        outline-none
+        resize-none
+      "
+      rows={4}
+    />
+
+  )}
+
+</div>
 
       {/* Footer */}
       <div className="pt-4 text-xs text-zinc-600 border-t border-zinc-800 mt-6 flex justify-between">
@@ -168,3 +223,4 @@ useEffect(() => {
     </div>
   )
 }
+

@@ -172,6 +172,7 @@ const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
 const [currentChapterIndex, setCurrentChapterIndex] = useState(0)
 // 🔹 Multi-tab conflict detection
 const [hasExternalUpdate, setHasExternalUpdate] = useState(false)
+
 // 🔹 Layout resize state
 const [sidebarWidth, setSidebarWidth] = useState(() => {
   const saved = localStorage.getItem("layout-sidebar-width")
@@ -883,8 +884,22 @@ const reloadFromStorage = () => {
                 const tone = detectTone(panel.text)
                 const intensityLevel = detectIntensity(panel.text)
                 const density = detectDensity(panel.text)
+                const isSceneBreak = panel.text.trim().startsWith("#scene")
 
                 return (
+                  <div className="flex items-center gap-3">
+
+    {isSceneBreak && (
+      <div className="flex flex-col items-center">
+
+        <div className="text-[9px] text-zinc-500 uppercase">
+          Scene
+        </div>
+
+        <div className="w-6 h-[2px] bg-white/60 my-1" />
+
+      </div>
+    )}
                   <button
                     key={index}
                     ref={(el) => {
@@ -903,47 +918,91 @@ const reloadFromStorage = () => {
                     <div className="flex flex-col items-center gap-2">
 
                       {/* DOT */}
-                      <div
+                      {/* DOT — manga style */}
+
+<div
   className={`
-  w-4 h-4 rounded-full
+    relative
 
-  transition-all duration-300
+    w-5 h-5
+    rounded-full
 
-  ${isActive ? "scale-125 shadow-lg" : "scale-100"}
+    transition-all duration-300
 
-  ${
-    tone === "Positive"
-      ? "bg-green-500"
-      : tone === "Dark"
-      ? "bg-red-500"
-      : tone === "Aggressive"
-      ? "bg-orange-500"
-      : "bg-zinc-500"
-  }
+    ${isActive ? "scale-125" : "scale-100"}
 
-  ${
-    isActive
-      ? "ring-2 ring-white/70 shadow-[0_0_10px_rgba(255,255,255,0.4)]"
-      : ""
-  }
+    ${
+      tone === "Positive"
+        ? "bg-green-500"
+        : tone === "Dark"
+        ? "bg-red-500"
+        : tone === "Aggressive"
+        ? "bg-orange-500"
+        : "bg-zinc-500"
+    }
 
-  group-hover:scale-110
-  group-hover:brightness-125
-`}
-/>
+    ${
+      isActive
+        ? "ring-2 ring-white shadow-[0_0_12px_rgba(255,255,255,0.7)]"
+        : ""
+    }
+
+    group-hover:scale-110
+  `}
+>
+
+  {/* bubble tail */}
+  <div
+    className={`
+      absolute
+      -bottom-1
+      left-1/2
+      -translate-x-1/2
+
+      w-2 h-2
+      rotate-45
+
+      ${
+        tone === "Positive"
+          ? "bg-green-500"
+          : tone === "Dark"
+          ? "bg-red-500"
+          : tone === "Aggressive"
+          ? "bg-orange-500"
+          : "bg-zinc-500"
+      }
+
+      ${isActive ? "opacity-100" : "opacity-60"}
+    `}
+  />
+
+</div>
 
                       {/* DENSITY BAR */}
-                      <div
-                        className={`w-1 rounded-full transition-all duration-200 ${
-                          density === "Heavy"
-                            ? "h-6 bg-white"
-                            : density === "Dense"
-                            ? "h-4 bg-white/80"
-                            : density === "Light"
-                            ? "h-2 bg-white/60"
-                            : "h-0"
-                        }`}
-                      />
+                      {/* DENSITY MARKERS — manga pacing */}
+
+<div className="flex flex-col items-center gap-[2px]">
+
+  {density === "Heavy" && (
+    <>
+      <div className="w-[2px] h-3 bg-white rounded" />
+      <div className="w-[2px] h-3 bg-white rounded" />
+      <div className="w-[2px] h-3 bg-white rounded" />
+    </>
+  )}
+
+  {density === "Dense" && (
+    <>
+      <div className="w-[2px] h-3 bg-white/80 rounded" />
+      <div className="w-[2px] h-3 bg-white/80 rounded" />
+    </>
+  )}
+
+  {density === "Light" && (
+    <div className="w-[2px] h-2 bg-white/60 rounded" />
+  )}
+
+</div>
 
                       <span
   className={`
@@ -963,6 +1022,7 @@ const reloadFromStorage = () => {
 
                     </div>
                   </button>
+                  </div>
                 )
               })}
 
