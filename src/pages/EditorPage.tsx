@@ -111,6 +111,30 @@ export default function EditorPage() {
       ],
     },
   ]
+  function buildPanelPrompt() {
+
+  if (!currentPanel) return ""
+
+  const text = currentPanel.text || ""
+
+  const notesMatch = text.match(/#notes([\s\S]*)/)
+  const notes = notesMatch ? notesMatch[1].trim() : ""
+
+  const characterNames = characters.map(c => c.name).join(", ")
+
+  const prompt = `
+Panel Text:
+${text}
+
+Notes:
+${notes}
+
+Characters:
+${characterNames}
+`
+
+  return prompt
+}
   // 🔥 Restore saved chapters per chapter
 const restoredChapters = initialChapters.map(chapter => {
   const saved = localStorage.getItem(
@@ -168,10 +192,17 @@ const [version, setVersion] = useState(1)
 // 🔥 Activity Drawer State
 const [isActivityOpen, setIsActivityOpen] = useState(false)
 const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
+const [isPreview, setIsPreview] = useState(false)
+const [characters, setCharacters] = useState<
+  { id: string; name: string; description: string }[]
+>([])
+const [showCharacters, setShowCharacters] = useState(false)
   
 const [currentChapterIndex, setCurrentChapterIndex] = useState(0)
+const [showGenerateMenu, setShowGenerateMenu] = useState(false)
 // 🔹 Multi-tab conflict detection
 const [hasExternalUpdate, setHasExternalUpdate] = useState(false)
+const [activeRightTab, setActiveRightTab] = useState<"intelligence" | "characters" >("intelligence")
 
 // 🔹 Layout resize state
 const [sidebarWidth, setSidebarWidth] = useState(() => {
@@ -769,7 +800,6 @@ const reloadFromStorage = () => {
   }
 `}
             />
-
             {cIndex === currentChapterIndex && (
               <div className="ml-4 mt-3">
                 <div className="text-xs text-zinc-500 uppercase mb-2">
@@ -864,6 +894,107 @@ const reloadFromStorage = () => {
   onReload={reloadFromStorage}
   onOpenActivity={() => setIsActivityOpen(true)}
 />
+{/* CHARACTERS BUTTON */}
+
+<div className="px-6 pt-2">
+
+  <button
+    onClick={() => setShowCharacters(!showCharacters)}
+    className="
+      text-xs
+      text-zinc-400
+      hover:text-white
+    "
+  >
+    Characters
+  </button>
+
+</div>
+
+
+<div className="px-6 pt-2 flex gap-4">
+
+  <button
+    onClick={() => setIsPreview(!isPreview)}
+    className="text-xs text-zinc-400 hover:text-white"
+  >
+    {isPreview ? "Editor" : "Preview"}
+  </button>
+
+</div>
+<div className="relative">
+
+  <button
+    onClick={() => setShowGenerateMenu(!showGenerateMenu)}
+    className="text-xs text-zinc-400 hover:text-white"
+  >
+    Generate
+  </button>
+
+  {showGenerateMenu && (
+
+    <div
+      className="
+        absolute
+        mt-2
+        bg-zinc-900
+        border border-zinc-800
+        rounded
+        text-xs
+        flex flex-col
+        z-50
+      "
+    >
+
+      <button
+        onClick={() => {
+          const prompt = buildPanelPrompt()
+
+          console.log(prompt)
+
+          alert(prompt)
+          setShowGenerateMenu(false)
+}}
+        className="px-3 py-2 hover:bg-zinc-800 text-left"
+      >
+        Generate Panel
+      </button>
+
+      <button
+        onClick={() => {
+          alert("Generate Page clicked")
+          setShowGenerateMenu(false)
+}}
+        className="px-3 py-2 hover:bg-zinc-800 text-left"
+      >
+        Generate Page
+      </button>
+
+      <button
+        onClick={() => {
+          alert("Generate Scene clicked")
+          setShowGenerateMenu(false)
+        }}
+        className="px-3 py-2 hover:bg-zinc-800 text-left"
+      >
+        Generate Scene
+      </button>
+
+      <button
+        onClick={() => {
+          alert("Generate Chapter clicked")
+          setShowGenerateMenu(false)
+        }}
+        className="px-3 py-2 hover:bg-zinc-800 text-left"
+      >
+        Generate Chapter
+      </button>
+
+    </div>
+
+  )}
+
+</div>
 
         <div className="flex-1 px-10 py-10 overflow-auto">
 
@@ -1052,8 +1183,9 @@ const reloadFromStorage = () => {
           {/* PANEL EDITOR */}
           <div className="flex justify-center">
             <div className="w-full max-w-4xl">
-              {currentPanel && (
+              {!isPreview && currentPanel && (
                 <PanelEditor
+                
                   key={`${currentChapterIndex}-${currentPageIndex}-${currentPanelIndex}`}
                   panelNumber={currentPanelIndex + 1}
                   panelText={currentPanel.text}
@@ -1066,7 +1198,41 @@ const reloadFromStorage = () => {
                   onUndo={handleUndo}
                   onRedo={handleRedo}
                 />
+                
+                
               )}
+              {isPreview && (
+
+  <div className="max-w-4xl mx-auto flex flex-col gap-6">
+
+    {currentPanels.map((panel, i) => (
+
+      <div
+        key={i}
+        className="
+          bg-white
+          text-black
+          p-6
+          rounded
+          shadow
+        "
+      >
+
+        <div className="text-xs text-zinc-500 mb-2">
+          Panel {i + 1}
+        </div>
+
+        <div className="whitespace-pre-wrap">
+          {panel.text}
+        </div>
+
+      </div>
+
+    ))}
+
+  </div>
+
+)}
             </div>
           </div>
 
@@ -1077,18 +1243,52 @@ const reloadFromStorage = () => {
   className="w-1 cursor-col-resize bg-zinc-800 hover:bg-white transition-colors"
 />
 
+
       {/* INTELLIGENCE PANEL (unchanged) */}
-      <div
+      {/* RIGHT PANEL */}
+
+<div
   className="
-border-l border-zinc-800
-bg-[#060606]
-p-6
-text-sm
-w-[320px]
-flex flex-col
-gap-6
+  border-l border-zinc-800
+  bg-[#060606]
+  w-[320px]
+  flex flex-col
 "
 >
+  {/* TABS */}
+
+<div className="flex border-b border-zinc-800 text-xs">
+
+  <button
+    onClick={() => setActiveRightTab("intelligence")}
+    className={`flex-1 p-2 ${
+      activeRightTab === "intelligence"
+        ? "bg-zinc-900 text-white"
+        : "text-zinc-500"
+    }`}
+  >
+    Intelligence
+  </button>
+
+  <button
+    onClick={() => setActiveRightTab("characters")}
+    className={`flex-1 p-2 ${
+      activeRightTab === "characters"
+        ? "bg-zinc-900 text-white"
+        : "text-zinc-500"
+    }`}
+  >
+    Characters
+  </button>
+
+ 
+
+</div>
+{activeRightTab === "intelligence" && (
+
+<div className="p-6 flex flex-col gap-6">
+
+
         <div className="flex items-center justify-between">
 
   <div className="uppercase text-xs text-zinc-500 tracking-wider">
@@ -1100,6 +1300,8 @@ gap-6
   </div>
 
 </div>
+
+
 
         {currentPanel && (
           <div className="flex flex-col gap-6 text-zinc-300">
@@ -1130,6 +1332,7 @@ gap-6
   </div>
 
   </div>
+  
   {/* TIMELINE GRAPH */}
 
 <div className="mt-4 flex flex-col gap-2">
@@ -1286,12 +1489,15 @@ gap-6
 
              
             </div>
+            </div>
+)}
 
             <div className="flex flex-col gap-1">
 
   <div className="text-[11px] uppercase text-zinc-500">
     Text Metrics
   </div>
+  
   {/* AI SUGGESTIONS */}
 
 <div className="flex flex-col gap-2">
@@ -1299,6 +1505,7 @@ gap-6
   <div className="text-[11px] uppercase text-zinc-500">
     Suggestions
   </div>
+  
 
   <div className="flex flex-col gap-2 text-xs">
 
@@ -1333,6 +1540,7 @@ gap-6
     )}
 
   </div>
+  
 
 </div>
 
@@ -1348,6 +1556,76 @@ gap-6
           </div>
         )}
       </div>
+      
+      {/* CHARACTER PANEL */}
+
+{activeRightTab === "characters" && (
+
+  <div className="p-4 flex flex-col gap-4 overflow-auto">
+
+    <div className="text-xs uppercase text-zinc-500">
+      Characters
+    </div>
+
+    <button
+      onClick={() => {
+        setCharacters([
+          ...characters,
+          {
+            id: crypto.randomUUID(),
+            name: "",
+            description: "",
+          },
+        ])
+      }}
+      className="text-xs text-zinc-400 hover:text-white"
+    >
+      + Add Character
+    </button>
+
+    <div className="flex flex-col gap-3 overflow-auto">
+
+      {characters.map((c, i) => (
+
+        <div
+          key={c.id}
+          className="bg-zinc-900 p-2 rounded flex flex-col gap-2"
+        >
+
+          <input
+            value={c.name}
+            placeholder="Name"
+            onChange={(e) => {
+              const copy = [...characters]
+              copy[i].name = e.target.value
+              setCharacters(copy)
+            }}
+            className="bg-zinc-800 text-xs p-1 rounded"
+          />
+
+          <textarea
+            value={c.description}
+            placeholder="Description"
+            onChange={(e) => {
+              const copy = [...characters]
+              copy[i].description = e.target.value
+              setCharacters(copy)
+            }}
+            className="bg-zinc-800 text-xs p-1 rounded"
+          />
+
+        </div>
+
+      ))}
+
+    </div>
+
+  </div>
+
+)}
+
+
+
 
       {/* 🔥 ACTIVITY DRAWER */}
       <div

@@ -214,6 +214,33 @@ const setNotes = (notes: string) => {
   )}
 
 </div>
+{/* GENERATE BUTTON */}
+
+<div className="mt-4 flex justify-end">
+
+  <button
+    className="
+      px-4 py-2
+      text-sm
+
+      bg-white
+      text-black
+
+      rounded-md
+
+      hover:bg-zinc-200
+      active:scale-95
+
+      transition-all
+    "
+    onClick={() => {
+      console.log("Generate panel")
+    }}
+  >
+    ⚡ Generate Panel
+  </button>
+
+</div>
 
       {/* Footer */}
       <div className="pt-4 text-xs text-zinc-600 border-t border-zinc-800 mt-6 flex justify-between">
