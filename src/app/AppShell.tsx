@@ -33,32 +33,32 @@ export default function AppShell() {
 
   }, [location.pathname])
   return (
-    <div className="h-screen flex flex-col bg-black text-white">
+    <div className="h-screen flex flex-col bg-bgMain text-textMain">
 
       {/* Header */}
-      <div className="h-12 border-b border-zinc-800 flex items-center px-4 justify-between">
+      <div className="h-12 border-b border-borderMain bg-[#11151d] flex items-center px-4 justify-between backdrop-blur">
 
   {/* Left */}
   <div className="flex items-center gap-4">
 
-  <div className="font-semibold text-white">
+  <div className="font-semibold text-accent tracking-wide">
     AI Manga Studio
   </div>
 
-  <span className="text-zinc-600">/</span>
+  <span className="text-textDim">/</span>
 
   <Link
     to="/app"
-    className="text-sm text-zinc-400 hover:text-white"
+    className="text-sm text-textDim hover:text-textMain"
   >
     Dashboard
   </Link>
 
   {storyTitle && (
     <>
-      <span className="text-zinc-600">/</span>
+      <span className="text-textDim">/</span>
 
-      <span className="text-sm text-white">
+      <span className="text-sm text-textMain">
         {storyTitle}
       </span>
     </>
@@ -73,13 +73,13 @@ export default function AppShell() {
   {storyTitle && (
     <Link
       to="/app"
-      className="text-xs text-zinc-400 hover:text-white"
+      className="text-xs text-textDim hover:text-textMain"
     >
       ← Back
     </Link>
   )}
 
-  <div className="text-xs text-zinc-500">
+  <div className="text-xs text-textDim">
     v0.3
   </div>
 

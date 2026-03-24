@@ -8,19 +8,26 @@
   }
   body {
   font-family: "Inter", system-ui, sans-serif;
-  background: #050505;
-  color: #ffffff;
+  background-color: #0f1115;
+  color: #e6e9ef;
+
+  /* manga texture */
+  background-image: radial-gradient(#ffffff08 1px, transparent 1px);
+  background-size: 20px 20px;
 }
 :root {
-  --bg-main: #050505;
-  --bg-panel: #0d0d0d;
-  --bg-card: #151515;
-  --border-subtle: #272727;
+  --bg-main: #0f1115;
+  --bg-panel: #151922;
+  --bg-soft: #1c2230;
+  --bg-hover: #232a3a;
 
-  --accent-ai: #a855f7;
-  --accent-success: #22c55e;
-  --accent-warning: #f97316;
-  --accent-danger: #ef4444;
+  --border-main: #2a3142;
+
+  --text-main: #e6e9ef;
+  --text-dim: #9aa4b2;
+
+  --accent: #ff6b2d;
+  --accent-soft: #ff8a4d;
 }
 
   @keyframes fadeSlide {
