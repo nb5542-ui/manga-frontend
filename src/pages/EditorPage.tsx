@@ -766,9 +766,9 @@ const reloadFromStorage = () => {
 
       {/* SIDEBAR */}
       <div
-  className="border-r border-zinc-800 bg-zinc-950 p-5 overflow-y-auto scroll-smooth"
+  className="border-r border-borderMain bg-[#11151d] p-5 overflow-y-auto scroll-smooth"
 >
-        <div className="text-xs text-zinc-500 uppercase mb-4">
+        <div className="text-xs text-textDim uppercase mb-4 tracking-wider">
           Chapters
         </div>
 
@@ -795,14 +795,14 @@ const reloadFromStorage = () => {
 
   ${
     cIndex === currentChapterIndex
-      ? "text-white bg-zinc-800"
-      : "text-zinc-500 hover:text-white hover:bg-zinc-900"
+     ? "text-textMain bg-bgSoft"
+      : "text-textDim hover:text-textMain hover:bg-bgHover"
   }
 `}
             />
             {cIndex === currentChapterIndex && (
               <div className="ml-4 mt-3">
-                <div className="text-xs text-zinc-500 uppercase mb-2">
+                <div className="text-xs text-textDim uppercase mb-2 tracking-wider">
                   Pages
                 </div>
 
@@ -823,8 +823,8 @@ const reloadFromStorage = () => {
 
   ${
     pIndex === currentPageIndex
-      ? "text-white bg-zinc-800"
-      : "text-zinc-500 hover:text-white hover:bg-zinc-900"
+      ? "text-textMain bg-bgSoft"
+      : "text-textDim hover:text-textMain hover:bg-bgHover"
   }
 `}
                   >
@@ -837,15 +837,16 @@ const reloadFromStorage = () => {
   className="
     mt-2 text-xs
 
-    text-zinc-500
-    hover:text-white
+    text-textDim
+
+    hover:text-textMain
 
     px-2 py-1
     rounded
 
     transition-all duration-200
 
-    hover:bg-zinc-800
+    hover:bg-bgHover
     active:scale-95
   "
 >
@@ -869,7 +870,7 @@ const reloadFromStorage = () => {
 
     transition-all duration-200
 
-    hover:bg-zinc-800
+    bg-borderMain hover:bg-accent
     active:scale-95
   "
 >
