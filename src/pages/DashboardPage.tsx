@@ -60,45 +60,64 @@ export default function DashboardPage() {
 }
 
   return (
-    <div className="h-full bg-black text-white p-8">
+  <div className="h-full bg-bgMain text-textMain p-8">
 
-      <h1 className="text-2xl mb-6">
-        Your Stories
-      </h1>
-
-
-      <button
-        onClick={createStory}
-        className="mb-6 px-4 py-2 bg-white text-black rounded"
-      >
-        New Story
-      </button>
+    <h1 className="text-2xl font-semibold mb-6">
+      Your Stories
+    </h1>
 
 
-      <div className="space-y-4">
+    <button
+      onClick={createStory}
+      className="mb-6 px-4 py-2 rounded-xl bg-accent hover:bg-accentSoft text-white shadow-lg shadow-black/40"
+    >
+      New Story
+    </button>
 
-        {stories.map(story => (
 
-          <div
-            key={story.id}
-            className="border border-zinc-800 p-4 rounded flex justify-between"
-          >
+    <div className="space-y-4">
 
-            <div>{story.title}</div>
+      {stories.map(story => (
 
-            <button
-              onClick={() => openStory(story.id)}
-              className="px-3 py-1 bg-white text-black rounded"
-            >
-              Open
-            </button>
+        <div
+          key={story.id}
+          className="
+            bg-bgPanel
+            border border-borderMain
+            rounded-xl
+            p-4
+            flex
+            justify-between
+            items-center
+            hover:bg-bgSoft
+            transition
+          "
+        >
 
+          <div className="text-lg">
+            {story.title}
           </div>
 
-        ))}
+          <button
+            onClick={() => openStory(story.id)}
+            className="
+              px-3 py-1
+              rounded-lg
+              bg-bgSoft
+              hover:bg-accent
+              text-textMain
+              transition
+            "
+          >
+            Open
+          </button>
 
-      </div>
+        </div>
+
+      ))}
 
     </div>
+
+  </div>
   )
 }
