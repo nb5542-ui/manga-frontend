@@ -879,11 +879,28 @@ const reloadFromStorage = () => {
       </div>
       <div
   onMouseDown={() => setIsDragging("sidebar")}
-  className="w-1 cursor-col-resize bg-zinc-800 hover:bg-white transition-colors"
+  className="w-1 cursor-col-resize bg-borderMain hover:bg-accent transition-colors"
 />
 
       {/* CENTER COLUMN */}
-      <div className="flex-1 flex flex-col">
+      
+
+      <div className="
+flex-1 flex flex-col
+bg-bgMain
+relative
+overflow-hidden
+">
+  <div className="
+absolute inset-0
+pointer-events-none
+bg-[radial-gradient(circle_at_30%_20%,rgba(255,107,45,0.08),transparent_40%)]
+" />
+<div className="
+absolute inset-0
+pointer-events-none
+bg-[radial-gradient(circle_at_70%_80%,rgba(255,255,255,0.03),transparent_50%)]
+" />
 
       <EditorToolbar
   chapterTitle={currentChapter?.title}
