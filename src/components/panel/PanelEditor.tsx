@@ -104,22 +104,33 @@ const setNotes = (notes: string) => {
   className={`
     animate-fade flex flex-col h-[75vh]
 
-    bg-gradient-to-br from-zinc-900 via-zinc-900 to-black
+    bg-gradient-to-b from-[#1a1f2b] to-[#10141c]
     rounded-2xl
     p-10
 
     border
     ${
-      isFocused
-        ? "border-zinc-500 shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_20px_60px_rgba(0,0,0,0.9)]"
-        : "border-zinc-800 shadow-[0_20px_50px_rgba(0,0,0,0.6)]"
-    }
+  isFocused
+    ? "border-accent shadow-[0_0_40px_rgba(255,107,45,0.2)]"
+    : "border-borderMain shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
+}
+    backdrop-blur
+      transition-all duration-300
+      hover:scale-[1.01]
 
-    backdrop-blur-sm
-    transition-all duration-300
-  `}
+      relative overflow-hidden   // 
+    `}
 >
+  <div
+      className="
+        absolute inset-0
+        rounded-2xl
+        pointer-events-none
+        bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.06),transparent_60%)]
+      "
+    />
       {/* Header */}
+      <div className="relative z-10 flex flex-col h-full">
       <div className="flex items-center justify-between border-b border-zinc-800 pb-4 mb-6">
         <div className="text-xs uppercase tracking-wider text-zinc-500">
           Panel {panelNumber}
@@ -175,6 +186,8 @@ const setNotes = (notes: string) => {
 "
         placeholder="Write panel dialogue or narration..."
       />
+      </div>
+      
       {/* NOTES */}
 
 <div className="mt-4 border-t border-zinc-800 pt-3">
