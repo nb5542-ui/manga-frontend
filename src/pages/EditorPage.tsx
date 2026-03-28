@@ -1215,6 +1215,7 @@ bg-[radial-gradient(circle_at_70%_80%,rgba(255,255,255,0.03),transparent_50%)]
                   hasPrev={currentPanelIndex > 0}
                   onUndo={handleUndo}
                   onRedo={handleRedo}
+                  
                 />
                 
                 

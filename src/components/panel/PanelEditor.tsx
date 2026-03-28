@@ -11,6 +11,8 @@ interface Props {
   hasPrev: boolean
   onUndo?: () => void
   onRedo?: () => void
+  
+  onGenerate?: (text: string) => void
 
 }
 
@@ -31,6 +33,7 @@ export default function PanelEditor({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [localText, setLocalText] = useState(panelText)
   const [showNotes, setShowNotes] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
 
   useEffect(() => {
   setLocalText(panelText)
@@ -44,6 +47,21 @@ useEffect(() => {
 
   return () => clearTimeout(timeout)
 }, [localText])
+async function typeText(fullText: string) {
+  setIsGenerating(true)
+
+  let current = ""
+
+  for (let i = 0; i < fullText.length; i++) {
+    current += fullText[i]
+
+    setLocalText(current)
+
+    await new Promise((r) => setTimeout(r, 10)) // speed control
+  }
+
+  setIsGenerating(false)
+}
 
 
 
@@ -51,6 +69,9 @@ useEffect(() => {
   useEffect(() => {
     textareaRef.current?.focus()
   }, [panelNumber])
+  
+  
+  
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
   const isMac = navigator.platform.toUpperCase().includes("MAC")
@@ -164,9 +185,12 @@ const setNotes = (notes: string) => {
         onChange={(e) => setLocalText(e.target.value)}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
+        disabled={isGenerating}
+        
         
 
         onKeyDown={handleKeyDown}
+        
         className="
   w-full flex-1 resize-none bg-transparent outline-none
 
@@ -179,14 +203,21 @@ const setNotes = (notes: string) => {
   tracking-[0.01em]
 
   caret-white
+  caret-accent
 
   selection:bg-white/20
 
   transition-colors duration-200
 "
         placeholder="Write panel dialogue or narration..."
+        
       />
       </div>
+      {isGenerating && (
+  <div className="text-accent text-sm mt-2 animate-pulse">
+    AI is writing...
+  </div>
+)}
       
       {/* NOTES */}
 
