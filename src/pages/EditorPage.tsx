@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useReducer } from "react"
 import { useParams } from "react-router-dom"
 import EditorToolbar from "../components/panel/editor/EditorToolbar"
+import { buildGenerationContext } from "../engine/contextBuilder"
+
 
 
 
@@ -135,6 +137,7 @@ ${characterNames}
 
   return prompt
 }
+
   // 🔥 Restore saved chapters per chapter
 const restoredChapters = initialChapters.map(chapter => {
   const saved = localStorage.getItem(
@@ -232,6 +235,7 @@ useEffect(() => {
     setVersion(parsed)
   }
 }, [])
+
 // 🔹 Listen for external tab updates
 useEffect(() => {
   const handleStorageChange = (e: StorageEvent) => {
@@ -250,12 +254,14 @@ useEffect(() => {
       }
     }
   }
+  
 
   window.addEventListener("storage", handleStorageChange)
 
   return () => {
     window.removeEventListener("storage", handleStorageChange)
   }
+  
 }, [version, currentChapterIndex, history.present])
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
   const [currentPanelIndex, setCurrentPanelIndex] = useState(0)
@@ -266,6 +272,43 @@ useEffect(() => {
 
   const currentPanel =
     currentPanels[currentPanelIndex] || currentPanels[0]
+    // ===============================
+// 🔥 GENERATION HANDLER (NEW)
+// ===============================
+async function handleGenerate(panel: any) {
+  try {
+    const context = buildGenerationContext({
+      story: { id: storyId }, // minimal for now
+      chapter: currentChapter,
+      page: currentPage,
+      panel,
+      characters,
+      intelligence: {
+        tone: emotionalTone,
+        intensity,
+        drift: driftState,
+        chapter_health: chapterHealth
+      }
+    })
+
+    console.log("GEN CONTEXT:", context)
+
+    const res = await fetch("http://localhost:8000/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(context)
+    })
+
+    const data = await res.json()
+
+    console.log("GEN RESULT:", data)
+
+  } catch (err) {
+    console.error("Generation failed:", err)
+  }
+}
 
   /* ===============================
      LOCAL INTELLIGENCE
@@ -1211,6 +1254,7 @@ bg-[radial-gradient(circle_at_70%_80%,rgba(255,255,255,0.03),transparent_50%)]
                   onNext={goNext}
                   onPrev={goPrev}
                   onCreate={createNewPanel}
+                  onGenerate={() => handleGenerate(currentPanel)} 
                   hasNext={currentPanelIndex < currentPanels.length - 1}
                   hasPrev={currentPanelIndex > 0}
                   onUndo={handleUndo}
