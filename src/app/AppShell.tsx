@@ -1,4 +1,4 @@
-import { Outlet, Link, useParams, useLocation } from "react-router-dom"
+import { Outlet, Link, useLocation } from "react-router-dom"
 import { useEffect, useState } from "react"
 
 export default function AppShell() {

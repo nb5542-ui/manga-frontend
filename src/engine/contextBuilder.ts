@@ -1,5 +1,7 @@
 // src/lib/contextBuilder.ts
 
+import { getPanelText } from "../utils/panelUtils"
+
 type BuildContextInput = {
   story: any
   chapter: any
@@ -84,5 +86,5 @@ function extractPreviousPanels(page: any, currentPanel: any) {
   return page.panels
     .filter((p: any) => p.number < currentPanel.number)
     .slice(-3) // last 3 panels only
-    .map((p: any) => p.text || "")
+    .map((p: any) => getPanelText(p))
 }

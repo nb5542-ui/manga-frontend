@@ -1,6 +1,12 @@
 export interface Panel {
   id: string
-  text: string
+  panel: {
+    dialogue: { text: string }[]
+    action: any[]
+    emotion: any
+    visual: any
+    camera: any
+  }
 }
 
 export interface Page {

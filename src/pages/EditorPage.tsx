@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useReducer } from "react"
 import { useParams } from "react-router-dom"
 import EditorToolbar from "../components/panel/editor/EditorToolbar"
 import { buildGenerationContext } from "../engine/contextBuilder"
+import { getPanelText } from "../utils/panelUtils"
 
 
 
@@ -10,10 +11,7 @@ import { buildGenerationContext } from "../engine/contextBuilder"
 import PanelEditor from "../components/panel/PanelEditor"
 
 import type {
-  Panel,
-  Page,
   Chapter,
-  HistoryEntry,
   HistoryState
 } from "./src/types/editorTypes"
 const MAX_HISTORY = 100
@@ -108,7 +106,7 @@ export default function EditorPage() {
       pages: [
         {
           id: "page-1",
-          panels: [{ id: "panel-1", text: "" }],
+          panels: [{ id: "panel-1", panel: { dialogue: [], action: [], emotion: {}, visual: {}, camera: {} } }],
         },
       ],
     },
@@ -117,7 +115,7 @@ export default function EditorPage() {
 
   if (!currentPanel) return ""
 
-  const text = currentPanel.text || ""
+  const text = getPanelText(currentPanel)
 
   const notesMatch = text.match(/#notes([\s\S]*)/)
   const notes = notesMatch ? notesMatch[1].trim() : ""
@@ -304,6 +302,9 @@ async function handleGenerate(panel: any) {
     const data = await res.json()
 
     console.log("GEN RESULT:", data)
+    panel.panel = data.panel
+    delete panel.text
+    
 
   } catch (err) {
     console.error("Generation failed:", err)
@@ -314,7 +315,7 @@ async function handleGenerate(panel: any) {
      LOCAL INTELLIGENCE
   =============================== */
 
-  const text = currentPanel?.text || ""
+  const text = currentPanel ? getPanelText(currentPanel) : ""
 
   const wordCount = text.trim()
     ? text.trim().split(/\s+/).length
@@ -410,13 +411,13 @@ const detectDrift = () => {
   const previousPanel = currentPanels[currentPanelIndex - 1]
   if (!previousPanel) return "Stable"
 
-  const prevTone = detectTone(previousPanel.text)
-  const prevIntensity = detectIntensity(previousPanel.text)
-  const prevDensity = detectDensity(previousPanel.text)
+  const prevTone = detectTone(getPanelText(previousPanel))
+  const prevIntensity = detectIntensity(getPanelText(previousPanel))
+  const prevDensity = detectDensity(getPanelText(previousPanel))
 
-  const currentTone = detectTone(currentPanel.text)
-  const currentIntensity = detectIntensity(currentPanel.text)
-  const currentDensity = detectDensity(currentPanel.text)
+  const currentTone = detectTone(getPanelText(currentPanel))
+  const currentIntensity = detectIntensity(getPanelText(currentPanel))
+  const currentDensity = detectDensity(getPanelText(currentPanel))
 
   let driftScore = 0
 
@@ -437,11 +438,11 @@ const calculateChapterHealth = () => {
 
   const panels = currentChapter.pages.flatMap(page => page.panels)
   if (panels.length === 0) return 0
-  const emptyPanels = panels.filter(p => !p.text.trim()).length
+  const emptyPanels = panels.filter(p => !getPanelText(p).trim()).length
   const emptyRatio = emptyPanels / panels.length
 
   // ---- Density Score ----
-  const densities = panels.map(p => detectDensity(p.text))
+  const densities = panels.map(p => detectDensity(getPanelText(p)))
   const heavyCount = densities.filter(d => d === "Heavy").length
   const emptyCount = densities.filter(d => d === "Empty").length
 
@@ -450,13 +451,13 @@ const calculateChapterHealth = () => {
   if (emptyCount > panels.length * 0.5) densityScore -= 10
 
   // ---- Tone Diversity ----
-  const tones = panels.map(p => detectTone(p.text))
+  const tones = panels.map(p => detectTone(getPanelText(p)))
   const uniqueTones = new Set(tones).size
 
   let toneScore = uniqueTones >= 3 ? 25 : uniqueTones === 2 ? 18 : 10
 
   // ---- Intensity Spread ----
-  const intensities = panels.map(p => detectIntensity(p.text))
+  const intensities = panels.map(p => detectIntensity(getPanelText(p)))
   const uniqueIntensity = new Set(intensities).size
 
   let intensityScore = uniqueIntensity >= 3 ? 25 : uniqueIntensity === 2 ? 18 : 10
@@ -465,8 +466,8 @@ const calculateChapterHealth = () => {
   let driftShifts = 0
 
   for (let i = 1; i < panels.length; i++) {
-    const prevTone = detectTone(panels[i - 1].text)
-    const currTone = detectTone(panels[i].text)
+    const prevTone = detectTone(getPanelText(panels[i - 1]))
+    const currTone = detectTone(getPanelText(panels[i]))
     if (prevTone !== currTone) driftShifts++
   }
 
@@ -608,13 +609,11 @@ useEffect(() => {
     })
   }, [currentPanelIndex, currentPageIndex])
   // 🔥 Mark chapter dirty when it changes
-const [pendingSaveData, setPendingSaveData] = useState<Chapter | null>(null)
 
 useEffect(() => {
   const chapter = history.present[currentChapterIndex]
   if (!chapter) return
 
-  setPendingSaveData(chapter)
   setSaveStatus("dirty")
 }, [history.present[currentChapterIndex]])
 
@@ -664,7 +663,13 @@ useEffect(() => {
 
             return {
               ...panel,
-              text
+              panel: {
+                dialogue: [{ text }],
+                action: panel.panel?.action || [],
+                emotion: panel.panel?.emotion || {},
+                visual: panel.panel?.visual || {},
+                camera: panel.panel?.camera || {}
+              }
             }
           })
         }
@@ -706,7 +711,7 @@ commit(updated, "UPDATE_PANEL_TEXT")
             ...page.panels,
             {
               id: `panel-${page.panels.length + 1}`,
-              text: ""
+              panel: { dialogue: [], action: [], emotion: {}, visual: {}, camera: {} }
             }
           ]
         }
@@ -730,7 +735,7 @@ commit(updated, "UPDATE_PANEL_TEXT")
         ...chapter.pages,
         {
           id: `page-${chapter.pages.length + 1}`,
-          panels: [{ id: "panel-1", text: "" }]
+          panels: [{ id: "panel-1", panel: { dialogue: [], action: [], emotion: {}, visual: {}, camera: {} } }]
         }
       ]
     }
@@ -754,7 +759,7 @@ commit(updated, "UPDATE_PANEL_TEXT")
       pages: [
         {
           id: "page-1",
-          panels: [{ id: "panel-1", text: "" }],
+          panels: [{ id: "panel-1", panel: { dialogue: [], action: [], emotion: {}, visual: {}, camera: {} } }],
         },
       ],
     },
@@ -1073,10 +1078,10 @@ bg-[radial-gradient(circle_at_70%_80%,rgba(255,255,255,0.03),transparent_50%)]
             >
               {currentPanels.map((panel, index) => {
                 const isActive = index === currentPanelIndex
-                const tone = detectTone(panel.text)
-                const intensityLevel = detectIntensity(panel.text)
-                const density = detectDensity(panel.text)
-                const isSceneBreak = panel.text.trim().startsWith("#scene")
+                const panelText = getPanelText(panel)
+                const tone = detectTone(panelText)
+                const density = detectDensity(panelText)
+                const isSceneBreak = panelText.trim().startsWith("#scene")
 
                 return (
                   <div className="flex items-center gap-3">
@@ -1249,7 +1254,7 @@ bg-[radial-gradient(circle_at_70%_80%,rgba(255,255,255,0.03),transparent_50%)]
                 
                   key={`${currentChapterIndex}-${currentPageIndex}-${currentPanelIndex}`}
                   panelNumber={currentPanelIndex + 1}
-                  panelText={currentPanel.text}
+                  panelText={getPanelText(currentPanel)}
                   onChange={updatePanelText}
                   onNext={goNext}
                   onPrev={goPrev}
@@ -1286,7 +1291,7 @@ bg-[radial-gradient(circle_at_70%_80%,rgba(255,255,255,0.03),transparent_50%)]
         </div>
 
         <div className="whitespace-pre-wrap">
-          {panel.text}
+          {getPanelText(panel)}
         </div>
 
       </div>
@@ -1407,9 +1412,10 @@ bg-[radial-gradient(circle_at_70%_80%,rgba(255,255,255,0.03),transparent_50%)]
   <div className="flex items-end gap-1 h-10 bg-zinc-900/40 px-2 py-2 rounded">
 
     {currentPanels.map((panel, i) => {
+      const panelText = getPanelText(panel)
 
-      const tone = detectTone(panel.text)
-      const density = detectDensity(panel.text)
+      const tone = detectTone(panelText)
+      const density = detectDensity(panelText)
 
       let height = 4
 

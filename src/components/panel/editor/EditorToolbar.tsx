@@ -19,14 +19,7 @@ export default function EditorToolbar({
   onReload,
   onOpenActivity
 }: EditorToolbarProps) {
-  const saveColor =
-    saveStatus === "saved"
-      ? "text-green-400"
-      : saveStatus === "saving"
-      ? "text-yellow-400"
-      : saveStatus === "dirty"
-      ? "text-orange-400"
-      : "text-zinc-500"
+
 
   const saveLabel =
     saveStatus === "dirty"
